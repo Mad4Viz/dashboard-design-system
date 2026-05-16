@@ -1,9 +1,7 @@
 /* =====================================================================
-   RAW Analytics Dashboard — interactive behaviour
-   Lifted from reference/functionality_demo.html. The demo is the source
-   of truth (per design_system_spec.md). Don't drift from it.
+   Dashboard interactive behaviour.
 
-   Sections (match spec Section 5):
+   Sections (match the === N.X === markers further down):
      5.1 Grid overlay
      5.2 Snap to grid
      5.3 Show all dimensions

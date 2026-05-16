@@ -1,7 +1,5 @@
 /* =====================================================================
-   RAW Analytics Dashboard — Shopify Overview demo styles
-   Source: reference/functionality_demo.html (the source-of-truth demo).
-   Token contract: design_system_spec.md Section 7. Mirrors ../../colors_and_type.css.
+   Shopify Overview demo styles. Tokens defined in the :root block below.
    ===================================================================== */
 
 :root {
@@ -575,7 +573,7 @@ body {
 /* ---- Chart SVG sizing — flexes to fill the card ----
    viewBox + preserveAspectRatio="xMidYMid meet" preserves aspect on resize.
    The width/height HTML attributes on the SVG element stay as a fallback
-   for environments that strip CSS (per dashboard_demo_spec Section 3). */
+   for environments that strip CSS. */
 .chart-svg {
   display: block;
   width: 100%;

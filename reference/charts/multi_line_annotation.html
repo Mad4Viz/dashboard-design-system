@@ -10,7 +10,7 @@
     d3 v7. Two time-series plus a callout marker for the peak.
     Reference: Profit Over Time | Protein in Shopify Overview (3).png.
 
-    Slot map (design_system_spec.md Section 4.4):
+    Slot map:
       {title}        .card-title       14px var(--text-primary), editable
       {subtitle}     .card-subtitle    12px var(--text-tertiary), editable
       {legend[]}     .card-legend      series colour + annotation colour
@@ -24,7 +24,7 @@
     the reference image. Only the Mar 2024 peak (£317.36K) is exact, from
     the user prompt. Swap in real monthly values when available.
 
-    Drop-in to functionality_demo.html:
+    Drop-in to template/index.html:
       1. Outer element: <div class="component chart-card">.
       2. Copy markup + script. Load d3 once in the canvas head if
          multiple charts share the demo.

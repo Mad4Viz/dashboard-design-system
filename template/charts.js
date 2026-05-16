@@ -1,5 +1,5 @@
 /* =====================================================================
-   Chart initializers for the RAW Analytics dashboard.
+   Chart initializers.
 
    Each renderer:
      1. Reads the SVG's actual rendered width/height (so the chart sizes

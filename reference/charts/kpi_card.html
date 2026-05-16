@@ -11,7 +11,7 @@
     Plain HTML+CSS. Not d3. First of five chart types for the Shopify
     Overview dashboard demo.
 
-    Slot map (from design_system_spec.md Section 4.1, revised at CP3):
+    Slot map:
       {label}           .kpi-label         14px, var(--text-secondary)
       {value}           .kpi-value         32px, var(--text-primary), 600
                         Vertically centred via margin: auto 0 so the
@@ -31,20 +31,20 @@
       - KPI padding: 16px to 24px on all sides (Section 4.1).
       - Delta value: signed prefix added (+/-) in addition to the arrow.
 
-    Drop-in into functionality_demo.html canvas:
+    Drop-in into template/index.html canvas:
       1. Outer element keeps BOTH classes: "component kpi-card".
          .component provides absolute position, drag, resize, dim label,
          and remove button. .kpi-card adds padding and the flex column.
       2. Copy any of the four KPI markups below inside the canvas.
       3. Set left/top via inline style to the slot position defined
-         in dashboard_demo_spec.md (e.g., left: 264px; top: 128px;).
+         (e.g., left: 264px; top: 128px;).
 
     Why both classes on one element: matches the existing demo pattern
-    at functionality_demo.html line 661.
+    at template/index.html line 661.
   -->
 
   <style>
-    /* CSS variables - same names as design_system_spec.md Section 7,
+    /* CSS variables mirror the design tokens,
        defaulted to spec values. When this file is dropped into the
        live demo, :root is already defined and these duplicates are
        harmless (same name + same value). */
