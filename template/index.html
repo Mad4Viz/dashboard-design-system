@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>RAW Analytics — Shopify Overview</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap">
+  <link rel="stylesheet"
+        href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,300,0,0">
+
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+
+<!-- =====================================================================
+     TWEAKS PANEL — five surfaces per design_system_spec.md Section 6
+     ===================================================================== -->
+<aside class="tweaks-panel">
+  <p class="panel-eyebrow">Design System</p>
+  <h2>Tweaks Panel</h2>
+  <div class="instructions">
+    Drag any component to test snap. Resize from any corner — the cursor
+    changes when you hit one. Live spacing flags appear at multiples of the
+    grid gutter (24, 48, 72…). Click any title or subtitle to edit. Hover a
+    component to reveal its remove (x) handle. All edits persist across reload.
+  </div>
+
+  <p class="tweak-section-label">Canvas</p>
+
+  <div class="tweak-row">
+    <input type="checkbox" id="toggle-grid">
+    <label for="toggle-grid">Grid overlay</label>
+  </div>
+
+  <div class="tweak-row">
+    <input type="checkbox" id="toggle-snap" checked>
+    <label for="toggle-snap">Snap to grid</label>
+  </div>
+
+  <div class="tweak-row">
+    <input type="checkbox" id="toggle-dims">
+    <label for="toggle-dims">Show all dimensions</label>
+  </div>
+
+  <div class="tweak-row tweak-row--stacked">
+    <div class="tweak-row-head">
+      <input type="checkbox" id="toggle-padding" checked>
+      <label for="toggle-padding">Component padding</label>
+    </div>
+    <div class="padding-controls">
+      <div class="padding-presets" role="radiogroup" aria-label="Padding presets">
+        <label class="padding-preset"><input type="radio" name="padding-preset" value="16" checked><span>16</span></label>
+        <label class="padding-preset"><input type="radio" name="padding-preset" value="24"><span>24</span></label>
+      </div>
+      <div class="padding-custom">
+        <span class="padding-custom-label">Custom</span>
+        <input type="number" id="input-padding" min="0" max="64" step="1" value="16" aria-label="Custom padding">
+        <span class="padding-unit">px</span>
+      </div>
+    </div>
+  </div>
+
+  <button id="add-component-btn" class="add-btn" type="button">+ Add component</button>
+
+  <div class="values-panel">
+    <h3>Live values
+      <a href="#" id="reset-link" style="font-weight: normal; color: var(--text-tertiary); font-size: var(--size-xs); margin-left: 8px;">(reset)</a>
+    </h3>
+    <pre id="values-output"></pre>
+  </div>
+</aside>
+
+<!-- =====================================================================
+     CANVAS — 1440 x 1024, hard locked
+     ===================================================================== -->
+<div class="canvas-wrapper">
+  <div class="canvas" id="canvas"
+       data-grid-visible="false"
+       data-snap-enabled="true"
+       data-dims-visible-all="false"
+       data-padding="16">
+
+    <!-- ============ Sidebar (Figma node 1184:696) ============ -->
+    <div class="sidebar">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 106 24" fill="currentColor" aria-label="RAW" style="height: 24px">
+          <path d="M105.997 0L93.2177 24H83.9615L79.354 15.3452L74.7467 24H65.4903L52.7111 0H64.9037L69.4785 8.59259L73.4312 0H85.6533L89.2325 8.59259L93.8074 0H106H105.997ZM52.2934 3.89629L62.9985 24H50.8059L46.1985 15.3452L41.5911 24H34.3437H19.2266L17.4548 14.1156L12.1925 24H0L12.7792 0H29.1319L35.1111 8.55407L25.834 14.2192L31.277 20.4741L40.1037 3.89629L40.0978 3.88444L40.7467 2.68741L42.1748 0H50.2192L51.6504 2.68741L52.2993 3.88444L52.2934 3.89629ZM24.7497 9.43704L21.4341 6.64L17.4548 14.1156L24.7497 9.43704Z"/>
+        </svg>
+      </div>
+
+      <div class="sidebar-last-update">
+        <div class="sidebar-last-update-label">Last Update</div>
+        <div class="sidebar-last-update-value">21.10.25 09:00:00am</div>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="sidebar-section-label sidebar-section-label--home">Navigation</p>
+        <div class="sidebar-nav-item sidebar-nav-item--active">
+          <span class="material-symbols-outlined sidebar-icon">grid_view</span>
+          Shopify Overview
+        </div>
+        <div class="sidebar-nav-item">
+          <span class="material-symbols-outlined sidebar-icon">browse_activity</span>
+          Marketing Spend
+        </div>
+        <div class="sidebar-nav-item">
+          <span class="material-symbols-outlined sidebar-icon">person</span>
+          Customer Analysis
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="sidebar-section-label">Filter Control</p>
+        <div class="sidebar-filter-row">
+          <span class="sidebar-filter-label">Select a Metric</span>
+          <span class="sidebar-filter-value">Profit</span>
+        </div>
+        <div class="sidebar-filter-row">
+          <span class="sidebar-filter-label">Select a Category</span>
+          <span class="sidebar-filter-value">Protein</span>
+        </div>
+      </div>
+
+      <div class="sidebar-section">
+        <p class="sidebar-section-label">Export</p>
+        <div class="sidebar-nav-item">
+          <span class="material-symbols-outlined sidebar-icon">picture_as_pdf</span>
+          PDF
+        </div>
+        <div class="sidebar-nav-item">
+          <span class="material-symbols-outlined sidebar-icon">image</span>
+          Image
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ Header ============ -->
+    <div class="header">
+      <div class="header-text">
+        <h1>Shopify Overview</h1>
+        <p>Direct To Customer (D2C/B2C)</p>
+      </div>
+      <div class="header-icons">
+        <span class="material-symbols-outlined" title="Info">info</span>
+        <svg viewBox="0 0 24 24" fill="currentColor" title="LinkedIn" aria-label="LinkedIn">
+          <path d="M19 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2zM8.34 18.34H5.67V9.67h2.67v8.67zM7 8.5a1.55 1.55 0 1 1 0-3.1 1.55 1.55 0 0 1 0 3.1zm11.34 9.84h-2.67v-4.5c0-1.07-.02-2.45-1.49-2.45-1.5 0-1.73 1.17-1.73 2.37v4.58H9.78V9.67h2.56v1.18h.04a2.81 2.81 0 0 1 2.53-1.39c2.7 0 3.2 1.78 3.2 4.09v4.79z"/>
+        </svg>
+        <svg viewBox="0 0 24 24" fill="currentColor" title="GitHub" aria-label="GitHub">
+          <path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.08 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.57 9.57 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.33 4.68-4.56 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/>
+        </svg>
+        <span class="material-symbols-outlined" title="Settings">settings</span>
+      </div>
+    </div>
+
+    <!-- ============ Grid overlay ============ -->
+    <div class="grid-overlay" aria-hidden="true">
+      <div class="grid-bands"></div>
+    </div>
+
+    <!-- ============ KPI ROW (4.1) ============ -->
+    <div class="component kpi-card" data-component-id="kpi-profit" data-direction="up" data-dims-visible="false"
+         style="left: 264px; top: 128px; width: 270px; height: 160px;">
+      <span class="dim-label"></span>
+      <p class="kpi-label card-title">Profit</p>
+      <p class="kpi-value">&pound;4.71M</p>
+      <p class="kpi-delta card-subtitle">
+        <span class="kpi-delta-change">
+          <span class="material-symbols-outlined kpi-delta-icon">north_east</span>+9%
+        </span>
+        <span class="kpi-delta-context">Vs Last Year</span>
+      </p>
+      <span class="resize-handle"></span>
+    </div>
+
+    <div class="component kpi-card" data-component-id="kpi-revenue" data-direction="up" data-dims-visible="false"
+         style="left: 558px; top: 128px; width: 270px; height: 160px;">
+      <span class="dim-label"></span>
+      <p class="kpi-label card-title">Revenue</p>
+      <p class="kpi-value">&pound;8.20M</p>
+      <p class="kpi-delta card-subtitle">
+        <span class="kpi-delta-change">
+          <span class="material-symbols-outlined kpi-delta-icon">north_east</span>+15%
+        </span>
+        <span class="kpi-delta-context">Vs Last Year</span>
+      </p>
+      <span class="resize-handle"></span>
+    </div>
+
+    <div class="component kpi-card" data-component-id="kpi-orders" data-direction="up" data-dims-visible="false"
+         style="left: 852px; top: 128px; width: 270px; height: 160px;">
+      <span class="dim-label"></span>
+      <p class="kpi-label card-title">Orders Fulfilled</p>
+      <p class="kpi-value">94K</p>
+      <p class="kpi-delta card-subtitle">
+        <span class="kpi-delta-change">
+          <span class="material-symbols-outlined kpi-delta-icon">north_east</span>+23%
+        </span>
+        <span class="kpi-delta-context">Vs Last Year</span>
+      </p>
+      <span class="resize-handle"></span>
+    </div>
+
+    <div class="component kpi-card" data-component-id="kpi-rcr" data-direction="down" data-dims-visible="false"
+         style="left: 1146px; top: 128px; width: 270px; height: 160px;">
+      <span class="dim-label"></span>
+      <p class="kpi-label card-title">Returning Customer Rate</p>
+      <p class="kpi-value">66%</p>
+      <p class="kpi-delta card-subtitle">
+        <span class="kpi-delta-change">
+          <span class="material-symbols-outlined kpi-delta-icon">south_east</span>-2%
+        </span>
+        <span class="kpi-delta-context">Vs Last Year</span>
+      </p>
+      <span class="resize-handle"></span>
+    </div>
+
+    <!-- ============ CHART ROW 1 ============ -->
+
+    <!-- 4.3 Grouped horizontal bar -->
+    <div class="component chart-card" data-component-id="chart-grouped-bar" data-dims-visible="false"
+         style="left: 264px; top: 312px; width: 564px; height: 240px;">
+      <span class="dim-label"></span>
+      <div class="card-header-row">
+        <div>
+          <p class="card-title chart-title">Profit By Product Category</p>
+          <p class="card-subtitle chart-subtitle">2024 Vs 2025</p>
+        </div>
+        <div class="card-legend">
+          <span class="legend-item"><span class="legend-swatch legend-swatch--primary"></span>2025</span>
+          <span class="legend-item"><span class="legend-swatch legend-swatch--secondary"></span>2024</span>
+        </div>
+      </div>
+      <svg id="chart-grouped-bar-svg" class="chart-svg"
+           viewBox="0 0 532 160"
+           preserveAspectRatio="xMidYMid meet"></svg>
+      <span class="resize-handle"></span>
+    </div>
+
+    <!-- 4.4 Multi-line with annotation -->
+    <div class="component chart-card" data-component-id="chart-multi-line" data-dims-visible="false"
+         style="left: 852px; top: 312px; width: 564px; height: 240px;">
+      <span class="dim-label"></span>
+      <div class="card-header-row">
+        <div>
+          <p class="card-title chart-title">Profit Over Time | Protein</p>
+          <p class="card-subtitle chart-subtitle">Jan 2024 - Oct 2025</p>
+        </div>
+        <div class="card-legend">
+          <span class="legend-item"><span class="legend-swatch legend-swatch--primary"></span>Highlighted Category</span>
+          <span class="legend-item"><span class="legend-swatch legend-swatch--annotation"></span>Max Value</span>
+        </div>
+      </div>
+      <svg id="chart-multi-line-svg" class="chart-svg"
+           viewBox="0 0 532 160"
+           preserveAspectRatio="xMidYMid meet"></svg>
+      <span class="resize-handle"></span>
+    </div>
+
+    <!-- ============ CHART ROW 2 ============ -->
+
+    <!-- 4.5 Combo bar + line dual-axis -->
+    <div class="component chart-card" data-component-id="chart-combo" data-dims-visible="false"
+         style="left: 264px; top: 576px; width: 564px; height: 240px;">
+      <span class="dim-label"></span>
+      <div class="card-header-row">
+        <div>
+          <p class="card-title chart-title">No. of Sessions and Conversion Rate</p>
+          <p class="card-subtitle chart-subtitle">2025</p>
+        </div>
+      </div>
+      <div class="axis-title-row">
+        <span>Number of Sessions</span>
+        <span>Conversion Rate</span>
+      </div>
+      <svg id="chart-combo-svg" class="chart-svg chart-svg--combo"
+           viewBox="0 0 532 150"
+           preserveAspectRatio="xMidYMid meet"></svg>
+      <span class="resize-handle"></span>
+    </div>
+
+    <!-- 4.6 Ranked horizontal bar with row icons -->
+    <div class="component chart-card" data-component-id="chart-ranked" data-dims-visible="false"
+         style="left: 852px; top: 576px; width: 564px; height: 240px;">
+      <span class="dim-label"></span>
+      <div class="card-header-row">
+        <div>
+          <p class="card-title chart-title">Top 5 Products | Profit</p>
+          <p class="card-subtitle chart-subtitle">2025</p>
+        </div>
+        <div class="card-filters">
+          <div class="filter-info">
+            <span class="filter-label">Toggle Top/Bottom 5</span>
+            <span class="filter-value">Top 5 &#9662;</span>
+          </div>
+          <div class="filter-info">
+            <span class="filter-label">Select a Metric</span>
+            <span class="filter-value">Profit &#9662;</span>
+          </div>
+        </div>
+      </div>
+      <div class="ranked-list" id="chart-ranked-list"></div>
+      <span class="resize-handle"></span>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script src="charts.js"></script>
+<script src="dashboard.js"></script>
+
+</body>
+</html>

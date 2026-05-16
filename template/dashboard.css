@@ -1,0 +1,910 @@
+/* =====================================================================
+   RAW Analytics Dashboard — Shopify Overview demo styles
+   Source: reference/functionality_demo.html (the source-of-truth demo).
+   Token contract: design_system_spec.md Section 7. Mirrors ../../colors_and_type.css.
+   ===================================================================== */
+
+:root {
+  /* Palette */
+  --canvas-bg:        #f9fafb;
+  --card-bg:          #fefefe;
+  --card-border:      #e1e4e8;
+  --text-primary:     #1f2937;
+  --text-secondary:   #6b7280;
+  --text-tertiary:    #83899f;
+  --positive-delta:   #10b981;
+  --negative-delta:   #800F2F;
+  --status-indicator: #2db463;
+  --active-nav-row:   #f8f9fa;
+  --brand-text:       #1d3557;
+
+  --chart-accent:           #1f2937;
+  --chart-accent-secondary: #D3D3D3;
+  --annotation-accent:      #f59e0b;
+  --axis-colour:            #83899f;
+
+  --grid-band-colour: rgba(220, 80, 90, 0.18);
+  --grid-row-colour:  rgba(220, 80, 90, 0.10);
+
+  /* Typography */
+  --font-family: 'Open Sans', system-ui, sans-serif;
+  --label-font:  var(--font-family);
+  --size-xs:   12px;
+  --size-sm:   14px;
+  --size-base: 16px;
+  --size-kpi:  32px;
+  --size-h1:   24px;
+
+  /* Spacing (8px rhythm) */
+  --space-1: 8px;
+  --space-2: 16px;
+  --space-3: 24px;
+  --space-4: 32px;
+
+  /* Geometry */
+  --radius-card: 8px;
+
+  /* Layout */
+  --canvas-width:   1440px;
+  --canvas-height:  1024px;
+  --sidebar-width:  240px;
+  --header-height:  100px;
+  --col-count:      12;
+  --col-width:      74px;
+  --col-gutter:     24px;
+  --row-height:     8px;
+  --row-gutter:     24px;
+  --snap-threshold: 8px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-family);
+  color: var(--text-primary);
+  background: #e5e7eb;
+  display: flex;
+  align-items: flex-start;
+  min-height: 100vh;
+}
+
+/* =====================================================================
+   TWEAKS PANEL (sticky left rail)
+   ===================================================================== */
+.tweaks-panel {
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  width: 300px;
+  flex-shrink: 0;
+  height: 100vh;
+  overflow-y: auto;
+  background: var(--card-bg);
+  border-right: 1px solid var(--card-border);
+  padding: var(--space-3);
+  z-index: 100;
+}
+.tweaks-panel h2 {
+  font-size: var(--size-base);
+  margin: 0 0 var(--space-1) 0;
+  font-weight: 600;
+}
+.tweaks-panel .panel-eyebrow {
+  font-size: var(--size-xs);
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-2) 0;
+  letter-spacing: 0.02em;
+}
+.tweaks-panel .instructions {
+  font-size: var(--size-xs);
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 1px solid var(--card-border);
+  line-height: 1.5;
+}
+.tweak-section-label {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  margin: var(--space-3) 0 var(--space-1) 0;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.tweak-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  margin: var(--space-1) 0;
+}
+.tweak-row label {
+  flex: 1;
+  font-size: var(--size-sm);
+  cursor: pointer;
+}
+.tweak-row--stacked { flex-direction: column; align-items: stretch; gap: 8px; }
+.tweak-row--stacked > label { flex: none; }
+.tweak-row-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+.tweak-row-head label {
+  flex: 1;
+  font-size: var(--size-sm);
+  cursor: pointer;
+}
+
+.padding-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 24px;
+}
+.padding-presets {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.padding-custom {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.padding-custom-label { font-size: 11px; color: var(--text-tertiary); }
+.tweak-row--stacked.is-disabled .padding-controls,
+.tweak-row--stacked.is-disabled .padding-presets,
+.tweak-row--stacked.is-disabled .padding-custom { opacity: 0.4; pointer-events: none; }
+.padding-preset {
+  flex: 0 0 auto;
+}
+.padding-preset input[type="radio"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.padding-preset > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 32px;
+  height: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-family: ui-monospace, monospace;
+  color: var(--text-primary);
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 80ms, border-color 80ms;
+}
+.padding-preset:hover > span { background: var(--canvas-bg); }
+.padding-preset input[type="radio"]:checked + span {
+  background: var(--text-primary);
+  color: var(--card-bg);
+  border-color: var(--text-primary);
+}
+#input-padding {
+  width: 44px;
+  height: 26px;
+  padding: 0 6px;
+  font-family: ui-monospace, monospace;
+  font-size: 12px;
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  text-align: right;
+}
+.padding-unit { font-size: 11px; color: var(--text-tertiary); }
+.add-btn {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-2);
+  padding: 8px 12px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  font-size: var(--size-sm);
+  cursor: pointer;
+  font-family: inherit;
+  color: var(--text-primary);
+  text-align: center;
+}
+.add-btn:hover { background: var(--canvas-bg); }
+
+.values-panel {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--card-border);
+}
+.values-panel h3 {
+  font-size: var(--size-sm);
+  margin: 0 0 var(--space-1) 0;
+  font-weight: 600;
+}
+.values-panel pre {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 11px;
+  background: var(--canvas-bg);
+  padding: var(--space-1);
+  border-radius: 4px;
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.4;
+}
+.pass { color: var(--positive-delta); font-weight: 600; }
+.fail { color: var(--negative-delta); font-weight: 600; }
+
+/* =====================================================================
+   CANVAS (1440 x 1024, hard locked)
+   ===================================================================== */
+.canvas-wrapper {
+  flex: 1;
+  overflow-x: auto;
+  padding: var(--space-3);
+}
+.canvas {
+  width: var(--canvas-width);
+  height: var(--canvas-height);
+  background: var(--canvas-bg);
+  position: relative;
+  box-shadow: 0 0 0 1px var(--card-border);
+}
+
+/* =====================================================================
+   SIDEBAR (matches Figma node 1184:696)
+   ===================================================================== */
+.sidebar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: var(--sidebar-width);
+  height: 100%;
+  background: var(--card-bg);
+  border-right: 1px solid var(--card-border);
+  padding: var(--space-3) var(--space-2);
+  overflow-y: auto;
+}
+.sidebar-logo {
+  color: #000;
+  /* Push everything below the logo to start at y=168.
+     Logo sits at y=24 (sidebar padding-top) with height 24px,
+     so margin-bottom = 168 - 24 - 24 = 120px. */
+  margin: 0 0 120px 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 24px;
+  transform: translateY(var(--logo-offset-y, 0px));
+}
+.sidebar-logo svg {
+  height: 24px;
+  width: auto;
+  display: block;
+}
+.sidebar-last-update {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--size-xs);
+  color: var(--text-tertiary);
+  padding: 0 12px;
+  margin-top: var(--space-3);
+}
+.sidebar-last-update-label { font-size: var(--size-xs); color: var(--text-tertiary); }
+.sidebar-last-update-value { font-size: var(--size-xs); color: var(--text-tertiary); }
+.sidebar-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--status-indicator);
+  display: inline-block;
+  flex-shrink: 0;
+}
+.sidebar-section { margin-top: var(--space-3); }
+.sidebar-section-label {
+  font-size: var(--size-xs);
+  color: var(--text-tertiary);
+  margin: 0 0 var(--space-1) 0;
+  padding: 12px 14px;
+}
+.sidebar-section-label--home { font-size: var(--size-sm); }
+
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+  height: 44px;
+  font-size: var(--size-xs);
+  color: #1a1a1a;
+  cursor: pointer;
+  border-radius: 4px;
+}
+.sidebar-nav-item--active {
+  background: var(--active-nav-row);
+  font-weight: 600;
+}
+.sidebar-icon {
+  font-size: 24px;
+  flex-shrink: 0;
+  color: inherit;
+  font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+}
+.sidebar-filter-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+}
+.sidebar-filter-label {
+  font-size: var(--size-xs);
+  color: var(--text-tertiary);
+  font-style: italic;
+}
+.sidebar-filter-value {
+  font-size: var(--size-xs);
+  color: var(--text-primary);
+}
+/* legacy alias retained for older snippets */
+.sidebar-dropdown {
+  margin: 0 12px;
+  height: 24px;
+  border: 1px solid #c4c4c4;
+  background: white;
+  font-size: var(--size-xs);
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #000;
+}
+.sidebar-dropdown-arrow { font-size: 10px; color: #666; }
+
+/* =====================================================================
+   HEADER
+   ===================================================================== */
+.header {
+  position: absolute;
+  top: 0;
+  left: var(--sidebar-width);
+  right: 0;
+  height: var(--header-height);
+  background: var(--canvas-bg);
+  padding: var(--space-3);
+}
+.header-text h1 {
+  font-size: var(--size-h1);
+  font-weight: 600;
+  margin: 0;
+}
+.header-text p {
+  font-size: var(--size-base);
+  color: var(--text-secondary);
+  margin: var(--space-1) 0 0 0;
+}
+.header-icons {
+  position: absolute;
+  top: 28px;
+  right: var(--space-3);
+  display: flex;
+  gap: 25px;
+  align-items: center;
+  color: #1a1a1a;
+}
+.header-icons .material-symbols-outlined,
+.header-icons svg {
+  width: 24px;
+  height: 24px;
+  font-size: 24px;
+  cursor: pointer;
+  color: #1a1a1a;
+  fill: #1a1a1a;
+}
+
+/* =====================================================================
+   5.1 GRID OVERLAY
+   ===================================================================== */
+.grid-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0;
+  transition: opacity 120ms;
+}
+.canvas[data-grid-visible="true"] .grid-overlay { opacity: 1; }
+.grid-bands {
+  position: absolute;
+  left: calc(var(--sidebar-width) + var(--space-3));
+  right: var(--space-3);
+  top: 0;
+  bottom: 0;
+  background:
+    repeating-linear-gradient(
+      to right,
+      var(--grid-band-colour) 0,
+      var(--grid-band-colour) var(--col-width),
+      transparent var(--col-width),
+      transparent calc(var(--col-width) + var(--col-gutter))
+    ),
+    repeating-linear-gradient(
+      to bottom,
+      var(--grid-row-colour) 0,
+      var(--grid-row-colour) var(--row-height),
+      transparent var(--row-height),
+      transparent calc(var(--row-height) + var(--row-gutter))
+    );
+}
+
+/* =====================================================================
+   COMPONENT BASE
+   ===================================================================== */
+.component {
+  position: absolute;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-card);
+  cursor: move;
+  user-select: none;
+  z-index: 5;
+  overflow: hidden;
+}
+
+/* 5.8 Padding control. Components read --component-padding from the canvas;
+   the Tweaks Panel writes a numeric value (px) into that custom property.
+   KPI cards stay locked at 24 (CP3 lock, Section 4.1). */
+.canvas { --component-padding: 16px; }
+.kpi-card { padding: var(--space-3); }
+.chart-card,
+.extra-card,
+.placeholder { padding: var(--component-padding); }
+
+/* ---- KPI card slots ---- */
+.kpi-card { display: flex; flex-direction: column; }
+.kpi-label {
+  font-size: var(--size-sm);
+  color: var(--text-secondary);
+  margin: 0;
+  font-weight: 400;
+  line-height: 1.3;
+}
+.kpi-value {
+  font-size: var(--size-kpi);
+  color: var(--text-primary);
+  font-weight: 600;
+  margin: auto 0;
+  line-height: 1.15;
+}
+.kpi-delta {
+  font-size: var(--size-xs);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  line-height: 1.3;
+}
+.kpi-delta-change {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--positive-delta);
+  font-weight: 500;
+}
+.kpi-card[data-direction="down"] .kpi-delta-change {
+  color: var(--negative-delta);
+}
+.kpi-delta-icon {
+  font-size: 14px;
+  font-variation-settings: 'FILL' 0, 'wght' 500, 'GRAD' 0, 'opsz' 24;
+  line-height: 1;
+}
+.kpi-delta-context { color: var(--text-tertiary); }
+
+/* ---- Chart card shared ---- */
+.chart-card {
+  /* padding handled by the --component-padding rule above; do not re-declare. */
+  display: flex;
+  flex-direction: column;
+}
+.card-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+  gap: 8px;
+}
+.card-title {
+  font-size: var(--size-sm);
+  color: var(--text-primary);
+  margin: 0 0 2px 0;
+  line-height: 1.3;
+  font-weight: 400;
+  outline: none;
+  cursor: text;
+  padding: 2px 4px;
+  margin-left: -4px;
+  border-radius: 4px;
+}
+.card-subtitle {
+  font-size: var(--size-xs);
+  color: var(--text-tertiary);
+  margin: 0;
+  line-height: 1.3;
+  outline: none;
+  cursor: text;
+  padding: 2px 4px;
+  margin-left: -4px;
+  border-radius: 4px;
+}
+/* Legacy aliases for back-compat with the demo's class names */
+.chart-title { /* alias of .card-title */ }
+.chart-subtitle { /* alias of .card-subtitle */ }
+.card-title:focus, .card-subtitle:focus,
+.chart-title:focus, .chart-subtitle:focus {
+  background: var(--canvas-bg);
+  box-shadow: inset 0 0 0 1px var(--card-border);
+}
+.card-legend {
+  display: flex;
+  gap: 12px;
+  font-size: var(--size-xs);
+  color: var(--text-secondary);
+}
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.legend-swatch {
+  width: 10px;
+  height: 10px;
+  display: inline-block;
+  border-radius: 2px;
+}
+.legend-swatch--primary    { background: var(--chart-accent); }
+.legend-swatch--secondary  { background: var(--chart-accent-secondary); }
+.legend-swatch--annotation { background: var(--annotation-accent); }
+
+/* ---- Chart SVG sizing — flexes to fill the card ----
+   viewBox + preserveAspectRatio="xMidYMid meet" preserves aspect on resize.
+   The width/height HTML attributes on the SVG element stay as a fallback
+   for environments that strip CSS (per dashboard_demo_spec Section 3). */
+.chart-svg {
+  display: block;
+  width: 100%;
+  flex: 1 1 0;
+  min-height: 0;
+}
+.chart-svg.chart-svg--combo { flex: 1 1 0; }
+
+.chart-svg .axis text {
+  fill: var(--axis-colour);
+  font-size: 10px;
+  font-family: var(--label-font);
+}
+.chart-svg .axis line {
+  stroke: var(--card-border);
+  stroke-dasharray: 2, 2;
+}
+.chart-svg .axis path { display: none; }
+
+.chart-svg .cat-label {
+  fill: var(--text-primary);
+  font-size: var(--size-xs);
+  font-family: var(--label-font);
+}
+.chart-svg .value-text {
+  fill: var(--text-primary);
+  font-size: var(--size-xs);
+  font-family: var(--label-font);
+  font-weight: 500;
+}
+.chart-svg .delta-text {
+  fill: var(--positive-delta);
+  font-size: 11px;
+  font-family: var(--label-font);
+}
+.chart-svg .bar-2025 { fill: var(--chart-accent); }
+.chart-svg .bar-2024 { fill: var(--chart-accent-secondary); }
+
+.chart-svg .line-protein {
+  fill: none;
+  stroke: var(--chart-accent);
+  stroke-width: 1.4;
+}
+.chart-svg .line-endurance {
+  fill: none;
+  stroke: var(--chart-accent-secondary);
+  stroke-width: 1.4;
+}
+.chart-svg .annot-dot {
+  fill: var(--annotation-accent);
+  stroke: var(--card-bg);
+  stroke-width: 1.5;
+}
+.chart-svg .annot-label {
+  fill: var(--text-primary);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--label-font);
+}
+.chart-svg .series-label {
+  fill: var(--text-secondary);
+  font-size: 11px;
+  font-family: var(--label-font);
+}
+
+.chart-svg .bar { fill: var(--chart-accent-secondary); }
+.chart-svg .line-overlay {
+  fill: none;
+  stroke: var(--chart-accent);
+  stroke-width: 1.4;
+  stroke-dasharray: 4, 3;
+}
+.chart-svg .point-dot {
+  fill: var(--chart-accent);
+  stroke: var(--card-bg);
+  stroke-width: 1.5;
+}
+.chart-svg .point-label {
+  fill: var(--text-primary);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: var(--label-font);
+  text-anchor: middle;
+}
+
+/* ---- Combo chart axis title row ---- */
+.axis-title-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-tertiary);
+  padding: 0 4px 4px 4px;
+}
+
+/* ---- Ranked horizontal bar ---- */
+.card-filters { display: flex; gap: 16px; }
+.filter-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 90px;
+}
+.filter-label {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  line-height: 1.2;
+}
+.filter-value {
+  font-size: 11px;
+  color: var(--text-primary);
+  font-weight: 500;
+  line-height: 1.2;
+}
+.ranked-list {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.ranked-row {
+  display: grid;
+  grid-template-columns: 18px 150px 1fr 70px;
+  align-items: center;
+  gap: 10px;
+}
+.ranked-icon {
+  width: 14px;
+  height: 14px;
+  color: var(--text-tertiary);
+}
+.ranked-text { min-width: 0; }
+.ranked-name {
+  font-size: var(--size-xs);
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ranked-subtitle {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin: 0;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ranked-bar-track { width: 100%; height: 10px; }
+.ranked-bar {
+  height: 10px;
+  background: var(--chart-accent-secondary);
+  border-radius: 2px;
+}
+.ranked-value {
+  font-size: var(--size-xs);
+  color: var(--text-primary);
+  font-weight: 500;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---- Extra (added) card ---- */
+.extra-card {
+  /* padding handled by --component-padding */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.card-header {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* ---- Placeholder (used by Add Component default + dim demos) ---- */
+.placeholder {
+  /* padding handled by --component-padding */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-tertiary);
+  font-size: var(--size-sm);
+}
+
+/* =====================================================================
+   5.3 DIMENSION LABEL OVERLAY
+   Two-line chip: W × H on top, x N, y N below.
+   ===================================================================== */
+.dim-label {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 20;
+  font-family: var(--font-family);
+  font-size: var(--size-xs);
+  color: var(--text-tertiary);
+  background: var(--canvas-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 4px;
+  padding: 2px 6px;
+  display: none;
+  pointer-events: none;
+  flex-direction: column;
+  align-items: flex-end;
+  line-height: 1.25;
+  font-variant-numeric: tabular-nums;
+}
+.dim-label-dims { color: var(--text-primary); font-weight: 500; }
+.dim-label-pos  { font-size: 10px; color: var(--text-tertiary); }
+.component[data-dims-visible="true"] .dim-label { display: flex; }
+
+/* =====================================================================
+   RESIZE HANDLE
+   ===================================================================== */
+/* Four invisible corner zones; the cursor signals reshape. No grey square. */
+.resize-handle {
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  background: transparent;
+  z-index: 15;
+}
+.resize-handle--nw { top:    -2px; left:  -2px; cursor: nwse-resize; }
+.resize-handle--ne { top:    -2px; right: -2px; cursor: nesw-resize; }
+.resize-handle--sw { bottom: -2px; left:  -2px; cursor: nesw-resize; }
+.resize-handle--se { bottom: -2px; right: -2px; cursor: nwse-resize; }
+
+/* =====================================================================
+   SPACING FLAGS — Figma-style gap badges (multiples of the grid gutter)
+   ===================================================================== */
+.spacing-flag-layer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 50;
+}
+.spacing-flag {
+  position: absolute;
+  --flag: rgba(220, 80, 90, 0.95);
+}
+/* Horizontal gap (between two cards along the x axis) */
+.spacing-flag--h .spacing-flag-line {
+  position: absolute;
+  left: 0; right: 0; top: 50%;
+  height: 0;
+  border-top: 1px dashed var(--flag);
+  transform: translateY(-0.5px);
+}
+.spacing-flag--h .spacing-flag-cap {
+  position: absolute;
+  top: 0; bottom: 0;
+  width: 0;
+  border-left: 1px solid var(--flag);
+}
+.spacing-flag--h .spacing-flag-cap--start { left: 0; }
+.spacing-flag--h .spacing-flag-cap--end   { right: 0; }
+
+/* Vertical gap */
+.spacing-flag--v .spacing-flag-line {
+  position: absolute;
+  top: 0; bottom: 0; left: 50%;
+  width: 0;
+  border-left: 1px dashed var(--flag);
+  transform: translateX(-0.5px);
+}
+.spacing-flag--v .spacing-flag-cap {
+  position: absolute;
+  left: 0; right: 0;
+  height: 0;
+  border-top: 1px solid var(--flag);
+}
+.spacing-flag--v .spacing-flag-cap--start { top: 0; }
+.spacing-flag--v .spacing-flag-cap--end   { bottom: 0; }
+
+/* Alignment guide — thin red line that extends through aligned edges */
+.alignment-guide {
+  position: absolute;
+  background: rgba(220, 80, 90, 0.95);
+  pointer-events: none;
+}
+.alignment-guide--v { width: 1px; }
+.alignment-guide--h { height: 1px; }
+
+.spacing-flag-pill {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--flag);
+  color: #fff;
+  font-family: var(--font-mono, "JetBrains Mono", ui-monospace, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 3px 5px;
+  border-radius: 3px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+
+/* =====================================================================
+   REMOVE HANDLE (hover-revealed x, top-left)
+   ===================================================================== */
+.remove-handle {
+  position: absolute;
+  top: 4px;
+  left: 4px;
+  width: 20px;
+  height: 20px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 50%;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  z-index: 25;
+  padding: 0;
+  font-family: inherit;
+  opacity: 0;
+  transition: opacity 100ms;
+}
+.component:hover .remove-handle,
+.remove-handle:focus { opacity: 1; }
+.remove-handle:hover {
+  background: var(--card-border);
+  color: var(--text-primary);
+}
+

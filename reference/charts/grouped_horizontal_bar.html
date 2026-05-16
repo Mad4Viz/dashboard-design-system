@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Grouped horizontal bar - chart code</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap">
+
+  <!--
+    CHART 2 - Grouped horizontal bar (component type 4.3)
+    d3 v7. Two parallel bars per category, primary on top, secondary below.
+    Reference: Profit By Product Category in Shopify Overview (3).png.
+
+    Slot map (design_system_spec.md Section 4.3):
+      {title}            .card-title           14px var(--text-primary), editable
+      {subtitle}         .card-subtitle        12px var(--text-tertiary), editable
+      {legend[]}         .card-legend          array of {label, swatch class}
+      {data[]}           const data = [...]    {category, value_2025, value_2024, delta_pct}
+      {value_formatter}  toFixed(2) + 'M'      in the value-text setter
+      {delta_formatter}  '+N%'                 in the delta-text setter
+
+    Honesty note on data: 2024 values are derived as 2025 ÷ (1 + delta_pct).
+    The Shopify reference image lists only the 2025 values and the delta %.
+    Swap real 2024 figures here if/when available.
+
+    Drop-in to functionality_demo.html:
+      1. Outer element: <div class="component chart-card">.
+         .component provides position/drag/resize/dim/remove from the demo.
+         .chart-card adds the 16px padding and flex column.
+      2. Copy the markup + script block into the canvas.
+      3. If multiple charts share the demo, load d3 once in the canvas head.
+  -->
+
+  <style>
+    :root {
+      --canvas-bg: #f9fafb;
+      --card-bg: #fefefe;
+      --card-border: #e1e4e8;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-tertiary: #83899f;
+      --positive-delta: #10b981;
+      --negative-delta: #800F2F;
+      --chart-accent: #1f2937;
+      --chart-accent-secondary: #D3D3D3;
+      --axis-colour: #83899f;
+      --font-family: 'Open Sans', system-ui, sans-serif;
+      --label-font: var(--font-family);
+      --size-xs: 12px;
+      --size-sm: 14px;
+      --space-2: 16px;
+      --radius-card: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: var(--font-family);
+      background: var(--canvas-bg);
+      color: var(--text-primary);
+    }
+
+    /* .component shim for the standalone preview. In the live demo
+       .component already exists and adds drag/resize/dim/remove. */
+    .component {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chart-card {
+      width: 564px;
+      height: 240px;
+      padding: var(--space-2);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: var(--size-sm);
+      color: var(--text-primary);
+      margin: 0 0 2px 0;
+      line-height: 1.3;
+      font-weight: 400;
+    }
+    .card-subtitle {
+      font-size: var(--size-xs);
+      color: var(--text-tertiary);
+      margin: 0;
+      line-height: 1.3;
+    }
+    .card-legend {
+      display: flex;
+      gap: 12px;
+      font-size: var(--size-xs);
+      color: var(--text-secondary);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      border-radius: 2px;
+    }
+    .legend-swatch--primary { background: var(--chart-accent); }
+    .legend-swatch--secondary { background: var(--chart-accent-secondary); }
+
+    .chart-svg {
+      display: block;
+      width: 100%;
+      height: 172px;     /* card 240 - padding 32 - header 36 = 172 */
+      min-height: 0;     /* prevents flex item inflation in some browsers */
+    }
+    .chart-svg .cat-label {
+      fill: var(--text-primary);
+      font-size: var(--size-xs);
+      font-family: var(--label-font);
+    }
+    .chart-svg .value-text {
+      fill: var(--text-primary);
+      font-size: var(--size-xs);
+      font-family: var(--label-font);
+      font-weight: 500;
+    }
+    .chart-svg .delta-text {
+      fill: var(--positive-delta);
+      font-size: 11px;
+      font-family: var(--label-font);
+    }
+    .chart-svg .bar-2025 { fill: var(--chart-accent); }
+    .chart-svg .bar-2024 { fill: var(--chart-accent-secondary); }
+  </style>
+</head>
+<body>
+
+<div class="component chart-card">
+  <div class="card-header-row">
+    <div>
+      <p class="card-title">Profit By Product Category</p>
+      <p class="card-subtitle">2024 Vs 2025</p>
+    </div>
+    <div class="card-legend">
+      <span class="legend-item"><span class="legend-swatch legend-swatch--primary"></span>2025</span>
+      <span class="legend-item"><span class="legend-swatch legend-swatch--secondary"></span>2024</span>
+    </div>
+  </div>
+  <svg id="chart2-svg" class="chart-svg" width="532" height="172" viewBox="0 0 532 160" preserveAspectRatio="xMidYMid meet"></svg>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function () {
+  /* Mock data from Shopify Overview (3).png.
+     2024 = 2025 / (1 + delta_pct). Replace with real values when available. */
+  const data = [
+    { category: 'Protein',     value_2025: 2.23e6, value_2024: 2.05e6, delta_pct: 9 },
+    { category: 'Pre-Workout', value_2025: 1.63e6, value_2024: 1.50e6, delta_pct: 9 },
+    { category: 'Endurance',   value_2025: 0.55e6, value_2024: 0.51e6, delta_pct: 8 },
+    { category: 'Recovery',    value_2025: 0.29e6, value_2024: 0.26e6, delta_pct: 11 }
+  ];
+
+  const svg = d3.select('#chart2-svg');
+  const W = 532, H = 160;
+  /* Margin reserves space:
+       left  = category labels column
+       right = value text + delta text column */
+  const margin = { top: 4, right: 80, bottom: 4, left: 100 };
+  const innerW = W - margin.left - margin.right;
+  const innerH = H - margin.top - margin.bottom;
+
+  const g = svg.append('g')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  /* y0: outer scale, one band per category, top to bottom. */
+  const y0 = d3.scaleBand()
+    .domain(data.map(function (d) { return d.category; }))
+    .range([0, innerH])
+    .paddingInner(0.25);
+
+  /* y1: inner scale, one band per series within a category. */
+  const y1 = d3.scaleBand()
+    .domain(['2025', '2024'])
+    .range([0, y0.bandwidth()])
+    .padding(0.15);
+
+  /* x: linear from 0 to the max 2025 value (2025 is always the larger series). */
+  const xMax = d3.max(data, function (d) { return d.value_2025; });
+  const x = d3.scaleLinear()
+    .domain([0, xMax])
+    .range([0, innerW]);
+
+  /* Category labels in the left margin column. */
+  svg.append('g').selectAll('.cat-label')
+    .data(data)
+    .join('text')
+    .attr('class', 'cat-label')
+    .attr('x', 8)
+    .attr('y', function (d) { return margin.top + y0(d.category) + y0.bandwidth() / 2; })
+    .attr('dy', '0.32em')
+    .text(function (d) { return d.category; });
+
+  /* One group per category, translated to its y0 band. */
+  const groups = g.selectAll('.group')
+    .data(data)
+    .join('g')
+    .attr('transform', function (d) { return 'translate(0,' + y0(d.category) + ')'; });
+
+  /* 2025 bar (primary, dark). */
+  groups.append('rect')
+    .attr('class', 'bar-2025')
+    .attr('x', 0)
+    .attr('y', y1('2025'))
+    .attr('width', function (d) { return x(d.value_2025); })
+    .attr('height', y1.bandwidth());
+
+  /* 2024 bar (secondary, neutral grey). */
+  groups.append('rect')
+    .attr('class', 'bar-2024')
+    .attr('x', 0)
+    .attr('y', y1('2024'))
+    .attr('width', function (d) { return x(d.value_2024); })
+    .attr('height', y1.bandwidth());
+
+  /* Value text just right of the 2025 bar end, above vertical centre. */
+  groups.append('text')
+    .attr('class', 'value-text')
+    .attr('x', function (d) { return x(d.value_2025) + 8; })
+    .attr('y', y0.bandwidth() / 2 - 6)
+    .attr('dy', '0.32em')
+    .text(function (d) { return '£' + (d.value_2025 / 1e6).toFixed(2) + 'M'; });
+
+  /* Delta text below the value, same x. */
+  groups.append('text')
+    .attr('class', 'delta-text')
+    .attr('x', function (d) { return x(d.value_2025) + 8; })
+    .attr('y', y0.bandwidth() / 2 + 6)
+    .attr('dy', '0.32em')
+    .text(function (d) { return '+' + d.delta_pct + '%'; });
+})();
+</script>
+</body>
+</html>

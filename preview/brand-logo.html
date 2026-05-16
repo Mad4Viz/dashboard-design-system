@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap">
+<style>
+  body { margin: 0; padding: 24px; font-family: 'Open Sans', system-ui, sans-serif; background: white; color: #1f2937; }
+  .row { display: flex; align-items: center; gap: 36px; }
+  .mark { color: #000; line-height: 0; }
+  .mark svg { height: 56px; width: auto; display: block; }
+  .info { display: flex; flex-direction: column; gap: 4px; }
+  .label { font-size: 12px; color: #83899f; }
+  .hex { font-size: 13px; font-family: ui-monospace, monospace; color: #1f2937; }
+  .note { margin-top: 18px; font-size: 11px; color: #6b7280; max-width: 480px; line-height: 1.5; }
+  code { font-family: ui-monospace, monospace; background: #f9fafb; padding: 1px 4px; border-radius: 3px; }
+</style>
+</head>
+<body>
+  <div class="row">
+    <div class="mark">
+      <svg viewBox="0 0 106 24" fill="currentColor" aria-label="RAW">
+        <path d="M105.997 0L93.2177 24H83.9615L79.354 15.3452L74.7467 24H65.4903L52.7111 0H64.9037L69.4785 8.59259L73.4312 0H85.6533L89.2325 8.59259L93.8074 0H106H105.997ZM52.2934 3.89629L62.9985 24H50.8059L46.1985 15.3452L41.5911 24H34.3437H19.2266L17.4548 14.1156L12.1925 24H0L12.7792 0H29.1319L35.1111 8.55407L25.834 14.2192L31.277 20.4741L40.1037 3.89629L40.0978 3.88444L40.7467 2.68741L42.1748 0H50.2192L51.6504 2.68741L52.2993 3.88444L52.2934 3.89629ZM24.7497 9.43704L21.4341 6.64L17.4548 14.1156L24.7497 9.43704Z"/>
+      </svg>
+    </div>
+    <div class="info">
+      <span class="label">RAW wordmark · monochrome · vector</span>
+      <span class="hex">currentColor (rendered <code>#000</code> in sidebar)</span>
+    </div>
+  </div>
+  <p class="note">Single-glyph mark. Source: <code>assets/logo.svg</code>. Inherits color via <code>fill="currentColor"</code> so it re-skins by setting <code>color</code> on the parent. Renders at 24px tall in the sidebar.</p>
+</body>
+</html>

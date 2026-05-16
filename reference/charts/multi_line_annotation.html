@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Multi-line with annotation - chart code</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap">
+
+  <!--
+    CHART 3 - Multi-line with annotation (component type 4.4)
+    d3 v7. Two time-series plus a callout marker for the peak.
+    Reference: Profit Over Time | Protein in Shopify Overview (3).png.
+
+    Slot map (design_system_spec.md Section 4.4):
+      {title}        .card-title       14px var(--text-primary), editable
+      {subtitle}     .card-subtitle    12px var(--text-tertiary), editable
+      {legend[]}     .card-legend      series colour + annotation colour
+      {data[]}       proteinData,
+                     enduranceData     arrays of {date, value}
+      {annotation}   const annotation  {date, value, label}
+      {axis_format_x} d3.timeFormat    '%b %y' on quarterly ticks
+      {axis_format_y} (d/1000)+'K'     applied to 100K, 200K, 300K ticks
+
+    Honesty note on data: monthly values are visual approximations from
+    the reference image. Only the Mar 2024 peak (£317.36K) is exact, from
+    the user prompt. Swap in real monthly values when available.
+
+    Drop-in to functionality_demo.html:
+      1. Outer element: <div class="component chart-card">.
+      2. Copy markup + script. Load d3 once in the canvas head if
+         multiple charts share the demo.
+  -->
+
+  <style>
+    :root {
+      --canvas-bg: #f9fafb;
+      --card-bg: #fefefe;
+      --card-border: #e1e4e8;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-tertiary: #83899f;
+      --chart-accent: #1f2937;
+      --chart-accent-secondary: #D3D3D3;
+      --annotation-accent: #f59e0b;
+      --axis-colour: #83899f;
+      --font-family: 'Open Sans', system-ui, sans-serif;
+      --label-font: var(--font-family);
+      --size-xs: 12px;
+      --size-sm: 14px;
+      --space-2: 16px;
+      --radius-card: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: var(--font-family);
+      background: var(--canvas-bg);
+      color: var(--text-primary);
+    }
+    .component {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      position: relative;
+    }
+    .chart-card {
+      width: 564px;
+      height: 240px;
+      padding: var(--space-2);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+    .card-title {
+      font-size: var(--size-sm);
+      color: var(--text-primary);
+      margin: 0 0 2px 0;
+      line-height: 1.3;
+      font-weight: 400;
+    }
+    .card-subtitle {
+      font-size: var(--size-xs);
+      color: var(--text-tertiary);
+      margin: 0;
+      line-height: 1.3;
+    }
+    .card-legend {
+      display: flex;
+      gap: 12px;
+      font-size: var(--size-xs);
+      color: var(--text-secondary);
+    }
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .legend-swatch {
+      width: 10px;
+      height: 10px;
+      display: inline-block;
+      border-radius: 2px;
+    }
+    .legend-swatch--primary { background: var(--chart-accent); }
+    .legend-swatch--annotation { background: var(--annotation-accent); }
+
+    .chart-svg {
+      display: block;
+      width: 100%;
+      height: 172px;     /* card 240 - padding 32 - header 36 = 172 */
+      min-height: 0;     /* prevents flex item inflation in some browsers */
+    }
+    .chart-svg .axis text {
+      fill: var(--axis-colour);
+      font-size: 10px;
+      font-family: var(--label-font);
+    }
+    .chart-svg .axis line {
+      stroke: var(--card-border);
+      stroke-dasharray: 2, 2;
+    }
+    /* Hide the axis baseline path; only grid lines + ticks should show. */
+    .chart-svg .axis path { display: none; }
+
+    .chart-svg .line-protein {
+      fill: none;
+      stroke: var(--chart-accent);
+      stroke-width: 1.4;
+    }
+    .chart-svg .line-endurance {
+      fill: none;
+      stroke: var(--chart-accent-secondary);
+      stroke-width: 1.4;
+    }
+
+    .chart-svg .annot-dot {
+      fill: var(--annotation-accent);
+      stroke: var(--card-bg);
+      stroke-width: 1.5;
+    }
+    .chart-svg .annot-label {
+      fill: var(--text-primary);
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--label-font);
+    }
+    .chart-svg .series-label {
+      fill: var(--text-secondary);
+      font-size: 11px;
+      font-family: var(--label-font);
+    }
+  </style>
+</head>
+<body>
+
+<div class="component chart-card">
+  <div class="card-header-row">
+    <div>
+      <p class="card-title">Profit Over Time | Protein</p>
+      <p class="card-subtitle">Jan 2024 - Oct 2025</p>
+    </div>
+    <div class="card-legend">
+      <span class="legend-item"><span class="legend-swatch legend-swatch--primary"></span>Highlighted Category</span>
+      <span class="legend-item"><span class="legend-swatch legend-swatch--annotation"></span>Max Value</span>
+    </div>
+  </div>
+  <svg id="chart3-svg" class="chart-svg" width="532" height="172" viewBox="0 0 532 160" preserveAspectRatio="xMidYMid meet"></svg>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function () {
+  /* Monthly values are visual approximations from the Shopify reference image.
+     Only Mar 2024 = £317.36K is exact (from user prompt). */
+  const proteinData = [
+    { date: new Date(2024, 0), value: 200000 },
+    { date: new Date(2024, 1), value: 240000 },
+    { date: new Date(2024, 2), value: 317360 },
+    { date: new Date(2024, 3), value: 160000 },
+    { date: new Date(2024, 4), value: 195000 },
+    { date: new Date(2024, 5), value: 235000 },
+    { date: new Date(2024, 6), value: 180000 },
+    { date: new Date(2024, 7), value: 210000 },
+    { date: new Date(2024, 8), value: 225000 },
+    { date: new Date(2024, 9), value: 195000 },
+    { date: new Date(2024, 10), value: 245000 },
+    { date: new Date(2024, 11), value: 275000 },
+    { date: new Date(2025, 0), value: 265000 },
+    { date: new Date(2025, 1), value: 175000 },
+    { date: new Date(2025, 2), value: 220000 },
+    { date: new Date(2025, 3), value: 200000 },
+    { date: new Date(2025, 4), value: 230000 },
+    { date: new Date(2025, 5), value: 190000 },
+    { date: new Date(2025, 6), value: 215000 },
+    { date: new Date(2025, 7), value: 225000 },
+    { date: new Date(2025, 8), value: 205000 },
+    { date: new Date(2025, 9), value: 180000 }
+  ];
+  const enduranceData = [
+    { date: new Date(2024, 0), value: 50000 },
+    { date: new Date(2024, 1), value: 60000 },
+    { date: new Date(2024, 2), value: 70000 },
+    { date: new Date(2024, 3), value: 45000 },
+    { date: new Date(2024, 4), value: 55000 },
+    { date: new Date(2024, 5), value: 75000 },
+    { date: new Date(2024, 6), value: 65000 },
+    { date: new Date(2024, 7), value: 60000 },
+    { date: new Date(2024, 8), value: 80000 },
+    { date: new Date(2024, 9), value: 70000 },
+    { date: new Date(2024, 10), value: 75000 },
+    { date: new Date(2024, 11), value: 85000 },
+    { date: new Date(2025, 0), value: 80000 },
+    { date: new Date(2025, 1), value: 65000 },
+    { date: new Date(2025, 2), value: 75000 },
+    { date: new Date(2025, 3), value: 60000 },
+    { date: new Date(2025, 4), value: 70000 },
+    { date: new Date(2025, 5), value: 55000 },
+    { date: new Date(2025, 6), value: 75000 },
+    { date: new Date(2025, 7), value: 70000 },
+    { date: new Date(2025, 8), value: 65000 },
+    { date: new Date(2025, 9), value: 60000 }
+  ];
+  const annotation = { date: new Date(2024, 2), value: 317360, label: 'Max: £317.36K' };
+
+  const svg = d3.select('#chart3-svg');
+  const W = 532, H = 160;
+  /* Margin reserves: left = y-axis ticks, right = "Protein"/"Endurance" labels,
+     bottom = x-axis labels, top = annotation label clearance. */
+  const margin = { top: 14, right: 70, bottom: 22, left: 36 };
+  const innerW = W - margin.left - margin.right;
+  const innerH = H - margin.top - margin.bottom;
+  const g = svg.append('g')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  const x = d3.scaleTime()
+    .domain([new Date(2024, 0), new Date(2025, 9)])
+    .range([0, innerW]);
+
+  const y = d3.scaleLinear()
+    .domain([0, 350000])
+    .range([innerH, 0]);
+
+  /* Y axis with horizontal grid lines (tickSize = -innerW). */
+  g.append('g')
+    .attr('class', 'axis axis-y')
+    .call(d3.axisLeft(y)
+      .tickValues([100000, 200000, 300000])
+      .tickFormat(function (d) { return (d / 1000) + 'K'; })
+      .tickSize(-innerW));
+
+  /* X axis with quarterly ticks formatted "%b %y". */
+  g.append('g')
+    .attr('class', 'axis axis-x')
+    .attr('transform', 'translate(0,' + innerH + ')')
+    .call(d3.axisBottom(x)
+      .ticks(d3.timeMonth.every(3))
+      .tickFormat(d3.timeFormat('%b %y'))
+      .tickSize(0)
+      .tickPadding(8));
+
+  /* Lines. Draw endurance first so protein sits on top at intersections. */
+  const lineGen = d3.line()
+    .x(function (d) { return x(d.date); })
+    .y(function (d) { return y(d.value); });
+
+  g.append('path').datum(enduranceData).attr('class', 'line-endurance').attr('d', lineGen);
+  g.append('path').datum(proteinData).attr('class', 'line-protein').attr('d', lineGen);
+
+  /* Annotation: amber dot + label above. */
+  g.append('circle')
+    .attr('class', 'annot-dot')
+    .attr('cx', x(annotation.date))
+    .attr('cy', y(annotation.value))
+    .attr('r', 4);
+  g.append('text')
+    .attr('class', 'annot-label')
+    .attr('x', x(annotation.date) + 8)
+    .attr('y', y(annotation.value) - 6)
+    .text(annotation.label);
+
+  /* Series labels right of the last data point. */
+  const lastProtein = proteinData[proteinData.length - 1];
+  const lastEndurance = enduranceData[enduranceData.length - 1];
+  g.append('text')
+    .attr('class', 'series-label')
+    .attr('x', x(lastProtein.date) + 6)
+    .attr('y', y(lastProtein.value))
+    .attr('dy', '0.32em')
+    .text('Protein');
+  g.append('text')
+    .attr('class', 'series-label')
+    .attr('x', x(lastEndurance.date) + 6)
+    .attr('y', y(lastEndurance.value))
+    .attr('dy', '0.32em')
+    .text('Endurance');
+})();
+</script>
+</body>
+</html>

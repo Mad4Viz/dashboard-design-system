@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Combo bar + line dual-axis - chart code</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap">
+
+  <!--
+    CHART 4 - Combo bar + line dual-axis (component type 4.5)
+    d3 v7. Bars on left y-axis (session counts), line + points on right
+    y-axis (conversion rate percentage).
+    Reference: No. of Sessions and Conversion Rate in Shopify Overview (3).png.
+
+    Slot map (design_system_spec.md Section 4.5):
+      {title}            .card-title           14px var(--text-primary), editable
+      {subtitle}         .card-subtitle        12px var(--text-tertiary), editable
+      {axis_left_label}  .axis-title-row span  "Number of Sessions"
+      {axis_right_label} .axis-title-row span  "Conversion Rate"
+      {bar_data[]}, {line_data[]}              merged into one data array per platform
+      {axis_format_left}  (d/1000)+'K'         applied on left axis
+      {axis_format_right} d+'%'                applied on right axis
+      {point_labels[]}    text above each dot  shows the percentage
+
+    Honesty note on data: session counts are visual estimates from the
+    reference image. The reference doesn't print specific session counts,
+    only the bar heights. Conversion rates (22, 15, 11) are exact from
+    the user prompt.
+
+    Drop-in to functionality_demo.html:
+      1. Outer element: <div class="component chart-card">.
+      2. Copy markup + script. Load d3 once in the canvas head if
+         multiple charts share the demo.
+  -->
+
+  <style>
+    :root {
+      --canvas-bg: #f9fafb;
+      --card-bg: #fefefe;
+      --card-border: #e1e4e8;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-tertiary: #83899f;
+      --chart-accent: #1f2937;
+      --chart-accent-secondary: #D3D3D3;
+      --axis-colour: #83899f;
+      --font-family: 'Open Sans', system-ui, sans-serif;
+      --label-font: var(--font-family);
+      --size-xs: 12px;
+      --size-sm: 14px;
+      --space-2: 16px;
+      --radius-card: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: var(--font-family);
+      background: var(--canvas-bg);
+      color: var(--text-primary);
+    }
+    .component {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      position: relative;
+    }
+    .chart-card {
+      width: 564px;
+      height: 240px;
+      padding: var(--space-2);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 4px;
+    }
+    .card-title {
+      font-size: var(--size-sm);
+      color: var(--text-primary);
+      margin: 0 0 2px 0;
+      line-height: 1.3;
+      font-weight: 400;
+    }
+    .card-subtitle {
+      font-size: var(--size-xs);
+      color: var(--text-tertiary);
+      margin: 0;
+      line-height: 1.3;
+    }
+    /* Axis title row: left and right y-axis labels above the SVG */
+    .axis-title-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--text-tertiary);
+      padding: 0 4px 4px 4px;
+    }
+    .chart-svg {
+      display: block;
+      width: 100%;
+      height: 150px;
+      min-height: 0;
+    }
+    .chart-svg .axis text {
+      fill: var(--axis-colour);
+      font-size: 10px;
+      font-family: var(--label-font);
+    }
+    .chart-svg .axis line {
+      stroke: var(--card-border);
+      stroke-dasharray: 2, 2;
+    }
+    .chart-svg .axis path { display: none; }
+
+    .chart-svg .bar { fill: var(--chart-accent-secondary); }
+    .chart-svg .line-overlay {
+      fill: none;
+      stroke: var(--chart-accent);
+      stroke-width: 1.4;
+      stroke-dasharray: 4, 3;
+    }
+    .chart-svg .point-dot {
+      fill: var(--chart-accent);
+      stroke: var(--card-bg);
+      stroke-width: 1.5;
+    }
+    .chart-svg .point-label {
+      fill: var(--text-primary);
+      font-size: 11px;
+      font-weight: 500;
+      font-family: var(--label-font);
+      text-anchor: middle;
+    }
+  </style>
+</head>
+<body>
+
+<div class="component chart-card">
+  <div class="card-header-row">
+    <div>
+      <p class="card-title">No. of Sessions and Conversion Rate</p>
+      <p class="card-subtitle">2025</p>
+    </div>
+  </div>
+  <div class="axis-title-row">
+    <span>Number of Sessions</span>
+    <span>Conversion Rate</span>
+  </div>
+  <svg id="chart4-svg" class="chart-svg" width="532" height="150" viewBox="0 0 532 150" preserveAspectRatio="xMidYMid meet"></svg>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<script>
+(function () {
+  /* Sessions are visual estimates from Shopify Overview (3).png.
+     Conversion rates (22, 15, 11) are exact from the user prompt. */
+  const data = [
+    { platform: 'Instagram', sessions: 400000, rate: 22 },
+    { platform: 'TikTok',    sessions: 230000, rate: 15 },
+    { platform: 'Facebook',  sessions: 110000, rate: 11 }
+  ];
+
+  const svg = d3.select('#chart4-svg');
+  const W = 532, H = 150;
+  /* Margin reserves: left = sessions axis labels, right = rate axis labels,
+     bottom = platform labels, top = clearance for the highest point label. */
+  const margin = { top: 14, right: 44, bottom: 22, left: 40 };
+  const innerW = W - margin.left - margin.right;
+  const innerH = H - margin.top - margin.bottom;
+  const g = svg.append('g')
+    .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+  const x = d3.scaleBand()
+    .domain(data.map(function (d) { return d.platform; }))
+    .range([0, innerW])
+    .padding(0.45);
+
+  /* Left axis: session counts (linear, 0 to 400K). */
+  const yLeft = d3.scaleLinear()
+    .domain([0, 400000])
+    .range([innerH, 0]);
+
+  /* Right axis: conversion rate percentage (linear, 0 to 30). */
+  const yRight = d3.scaleLinear()
+    .domain([0, 30])
+    .range([innerH, 0]);
+
+  /* Left y axis: ticks at 0, 200K, 400K with grid lines. */
+  g.append('g')
+    .attr('class', 'axis axis-y-left')
+    .call(d3.axisLeft(yLeft)
+      .tickValues([0, 200000, 400000])
+      .tickFormat(function (d) { return d === 0 ? '0K' : (d / 1000) + 'K'; })
+      .tickSize(-innerW));
+
+  /* Right y axis: ticks at 0%, 15%, 30%. */
+  g.append('g')
+    .attr('class', 'axis axis-y-right')
+    .attr('transform', 'translate(' + innerW + ',0)')
+    .call(d3.axisRight(yRight)
+      .tickValues([0, 15, 30])
+      .tickFormat(function (d) { return d + '%'; })
+      .tickSize(0)
+      .tickPadding(6));
+
+  /* X axis: platform names. */
+  g.append('g')
+    .attr('class', 'axis axis-x')
+    .attr('transform', 'translate(0,' + innerH + ')')
+    .call(d3.axisBottom(x).tickSize(0).tickPadding(8));
+
+  /* Bars: session counts on left axis, light grey fill. */
+  g.selectAll('.bar')
+    .data(data)
+    .join('rect')
+    .attr('class', 'bar')
+    .attr('x', function (d) { return x(d.platform); })
+    .attr('y', function (d) { return yLeft(d.sessions); })
+    .attr('width', x.bandwidth())
+    .attr('height', function (d) { return innerH - yLeft(d.sessions); });
+
+  /* Dashed line over the bars, points are bar-centers on the right axis. */
+  const lineGen = d3.line()
+    .x(function (d) { return x(d.platform) + x.bandwidth() / 2; })
+    .y(function (d) { return yRight(d.rate); });
+
+  g.append('path')
+    .datum(data)
+    .attr('class', 'line-overlay')
+    .attr('d', lineGen);
+
+  /* Point dots at each bar-center on the line. */
+  g.selectAll('.point-dot')
+    .data(data)
+    .join('circle')
+    .attr('class', 'point-dot')
+    .attr('cx', function (d) { return x(d.platform) + x.bandwidth() / 2; })
+    .attr('cy', function (d) { return yRight(d.rate); })
+    .attr('r', 3.5);
+
+  /* Percentage labels above each dot. */
+  g.selectAll('.point-label')
+    .data(data)
+    .join('text')
+    .attr('class', 'point-label')
+    .attr('x', function (d) { return x(d.platform) + x.bandwidth() / 2; })
+    .attr('y', function (d) { return yRight(d.rate) - 8; })
+    .text(function (d) { return d.rate + '%'; });
+})();
+</script>
+</body>
+</html>

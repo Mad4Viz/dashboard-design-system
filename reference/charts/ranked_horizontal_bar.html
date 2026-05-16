@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Ranked horizontal bar with row icons - chart code</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap">
+
+  <!--
+    CHART 5 - Ranked horizontal bar with row icons (component type 4.6)
+    Plain HTML+CSS+JS. Not d3. The D3 gallery
+    (https://observablehq.com/@d3/gallery) has SVG ordered-bar examples but
+    none include row metadata. Each row here holds an icon, product name,
+    subtitle, bar, and value text. More naturally an HTML grid than an SVG
+    composition.
+
+    Slot map (design_system_spec.md Section 4.6):
+      {title}             .card-title         14px var(--text-primary), editable
+      {subtitle}          .card-subtitle      12px var(--text-tertiary), editable
+      {rank_filter_label} .filter-label       10px var(--text-tertiary)
+      {metric_filter_label} .filter-label     10px var(--text-tertiary)
+      {data[]}            const data = [...]  {name, subtitle, value}
+      {value_formatter}   '£' + N.toFixed(2) + 'K'
+
+    Honesty notes on data:
+      - Names and values are exact from the user prompt.
+      - Subtitles are placeholders ("Brand Range"). The Shopify reference
+        shows a sub-line under each product name but the text is unreadable
+        at image resolution. Swap in real subtitles when available.
+      - Row icon is a generic package outline (inline SVG). The reference
+        shows product-category icons that are not clear enough to copy.
+
+    Drop-in to functionality_demo.html:
+      1. Outer element: <div class="component chart-card">.
+      2. Copy markup + script block into the canvas.
+      3. No external library needed.
+  -->
+
+  <style>
+    :root {
+      --canvas-bg: #f9fafb;
+      --card-bg: #fefefe;
+      --card-border: #e1e4e8;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --text-tertiary: #83899f;
+      --chart-accent-secondary: #D3D3D3;
+      --font-family: 'Open Sans', system-ui, sans-serif;
+      --size-xs: 12px;
+      --size-sm: 14px;
+      --space-2: 16px;
+      --radius-card: 8px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: var(--font-family);
+      background: var(--canvas-bg);
+      color: var(--text-primary);
+    }
+    .component {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-card);
+      overflow: hidden;
+      position: relative;
+    }
+    .chart-card {
+      width: 564px;
+      height: 240px;
+      padding: var(--space-2);
+      display: flex;
+      flex-direction: column;
+    }
+    .card-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: var(--size-sm);
+      color: var(--text-primary);
+      margin: 0 0 2px 0;
+      line-height: 1.3;
+      font-weight: 400;
+    }
+    .card-subtitle {
+      font-size: var(--size-xs);
+      color: var(--text-tertiary);
+      margin: 0;
+      line-height: 1.3;
+    }
+    .card-filters {
+      display: flex;
+      gap: 16px;
+    }
+    .filter-info {
+      display: flex;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 90px;
+    }
+    .filter-label {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      line-height: 1.2;
+    }
+    .filter-value {
+      font-size: 11px;
+      color: var(--text-primary);
+      font-weight: 500;
+      line-height: 1.2;
+    }
+
+    /* Ranked list fills the remaining card height. Rows distribute evenly. */
+    .ranked-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .ranked-row {
+      display: grid;
+      grid-template-columns: 18px 150px 1fr 70px;
+      align-items: center;
+      gap: 10px;
+    }
+    .ranked-icon {
+      width: 14px;
+      height: 14px;
+      color: var(--text-tertiary);
+    }
+    .ranked-text {
+      min-width: 0;  /* required for text-overflow ellipsis inside grid */
+    }
+    .ranked-name {
+      font-size: var(--size-xs);
+      color: var(--text-primary);
+      margin: 0;
+      line-height: 1.25;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ranked-subtitle {
+      font-size: 10px;
+      color: var(--text-tertiary);
+      margin: 0;
+      line-height: 1.2;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ranked-bar-track {
+      width: 100%;
+      height: 10px;
+    }
+    .ranked-bar {
+      height: 10px;
+      background: var(--chart-accent-secondary);
+      border-radius: 2px;
+    }
+    .ranked-value {
+      font-size: var(--size-xs);
+      color: var(--text-primary);
+      font-weight: 500;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+  </style>
+</head>
+<body>
+
+<div class="component chart-card">
+  <div class="card-header-row">
+    <div>
+      <p class="card-title">Top 5 Products | Profit</p>
+      <p class="card-subtitle">2025</p>
+    </div>
+    <div class="card-filters">
+      <div class="filter-info">
+        <span class="filter-label">Toggle Top/Bottom 5</span>
+        <span class="filter-value">Top 5 &#9662;</span>
+      </div>
+      <div class="filter-info">
+        <span class="filter-label">Select a Metric</span>
+        <span class="filter-value">Profit &#9662;</span>
+      </div>
+    </div>
+  </div>
+  <div class="ranked-list" id="ranked-list"></div>
+</div>
+
+<script>
+(function () {
+  /* Names and values are exact from the user prompt.
+     Subtitles are placeholders pending readable reference text. */
+  const data = [
+    { name: 'Protein | Milk & Cookies',        subtitle: 'Brand Range', value: 797.72 },
+    { name: 'Protein | Red Velvet',            subtitle: 'Brand Range', value: 656.92 },
+    { name: 'Pre-Workout | South Beach Slush', subtitle: 'Brand Range', value: 261.50 },
+    { name: 'Pre-Workout | Cherry Berry',      subtitle: 'Brand Range', value: 220.56 },
+    { name: 'Pre-Workout | 6PEAT',             subtitle: 'Brand Range', value: 213.14 }
+  ];
+  const maxValue = Math.max.apply(null, data.map(function (d) { return d.value; }));
+  const list = document.getElementById('ranked-list');
+
+  /* Inline SVG icon (generic package outline). Portable - no font dependency. */
+  const iconSVG =
+    '<svg class="ranked-icon" viewBox="0 0 24 24" fill="none"' +
+    ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<rect x="3" y="7" width="18" height="14" rx="2"/>' +
+      '<path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>' +
+    '</svg>';
+
+  data.forEach(function (d) {
+    const row = document.createElement('div');
+    row.className = 'ranked-row';
+
+    const textBlock =
+      '<div class="ranked-text">' +
+        '<p class="ranked-name">' + d.name + '</p>' +
+        '<p class="ranked-subtitle">' + d.subtitle + '</p>' +
+      '</div>';
+
+    const barPct = (d.value / maxValue * 100).toFixed(1);
+    const barBlock =
+      '<div class="ranked-bar-track">' +
+        '<div class="ranked-bar" style="width: ' + barPct + '%"></div>' +
+      '</div>';
+
+    const valueBlock = '<span class="ranked-value">&pound;' + d.value.toFixed(2) + 'K</span>';
+
+    row.innerHTML = iconSVG + textBlock + barBlock + valueBlock;
+    list.appendChild(row);
+  });
+})();
+</script>
+</body>
+</html>

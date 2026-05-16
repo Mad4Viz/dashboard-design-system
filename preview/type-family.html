@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;500;600&display=swap">
+<style>
+  body { margin: 0; padding: 24px; font-family: 'Open Sans', system-ui, sans-serif; background: white; color: #1f2937; }
+  .stack { display: flex; flex-direction: column; gap: 14px; }
+  .family-row { display: flex; align-items: baseline; gap: 16px; }
+  .face { font-size: 32px; line-height: 1; }
+  .face-meta { font-size: 11px; color: #83899f; font-family: ui-monospace, monospace; }
+  .weights { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; padding-top: 8px; border-top: 1px solid #e1e4e8; }
+  .w-cell { display: flex; flex-direction: column; gap: 4px; }
+  .w-sample { font-size: 22px; }
+  .w-tag { font-size: 11px; color: #83899f; font-family: ui-monospace, monospace; }
+  .fallback { font-size: 12px; color: #6b7280; padding-top: 6px; }
+</style>
+</head>
+<body>
+  <div class="stack">
+    <div class="family-row">
+      <div class="face" style="font-weight: 600;">Open Sans</div>
+      <div class="face-meta">--font-family · Google Fonts</div>
+    </div>
+    <div class="weights">
+      <div class="w-cell">
+        <div class="w-sample" style="font-weight: 400;">Regular 400</div>
+        <div class="w-tag">Body, labels, axes</div>
+      </div>
+      <div class="w-cell">
+        <div class="w-sample" style="font-weight: 500;">Medium 500</div>
+        <div class="w-tag">Value text in charts</div>
+      </div>
+      <div class="w-cell">
+        <div class="w-sample" style="font-weight: 600;">Semibold 600</div>
+        <div class="w-tag">KPI value, page H1, active nav</div>
+      </div>
+    </div>
+    <div class="fallback">Fallback stack: <code>system-ui, sans-serif</code>. No italics. No all-caps.</div>
+  </div>
+</body>
+</html>
