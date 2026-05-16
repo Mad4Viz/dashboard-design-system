@@ -225,6 +225,18 @@ body {
   margin: 0 0 var(--space-1) 0;
   font-weight: 600;
 }
+.values-panel-link {
+  font-weight: normal;
+  color: var(--text-tertiary);
+  font-size: var(--size-xs);
+  margin-left: 8px;
+  text-decoration: none;
+}
+.values-panel-link:hover { color: var(--text-primary); }
+.values-panel-link.is-flashing {
+  color: var(--positive-delta);
+  pointer-events: none;
+}
 .values-panel pre {
   font-family: ui-monospace, 'SF Mono', Menlo, monospace;
   font-size: 11px;

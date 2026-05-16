@@ -624,10 +624,19 @@ document.querySelectorAll('input[name="padding-preset"]').forEach(r => {
   });
 });
 
-/* === PERSISTENCE (5.7) === */
+/* === PERSISTENCE (5.7) ===
+   Three localStorage keys:
+     STORAGE_KEY  the rolling working state, written on every change.
+     DEFAULT_KEY  the user's saved default. The HTML baseline is captured here
+                  on first boot if missing, so (reset) always has a target.
+*/
 const STORAGE_KEY = 'raw_dashboard.v1';
+const DEFAULT_KEY = 'raw_dashboard.default.v1';
 
-function saveState() {
+/* captureState reads the DOM and returns a plain object that can be
+   JSON-stringified. Same shape powers the working state, the saved default,
+   and (later) named views. */
+function captureState() {
   const state = {
     toggles: {
       grid: canvas.getAttribute('data-grid-visible'),
@@ -666,17 +675,13 @@ function saveState() {
       state.removed.push(baselineId);
     }
   });
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  catch (e) {}
+  return state;
 }
 
-function loadState() {
-  let raw;
-  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return; }
-  if (!raw) return;
-  let state;
-  try { state = JSON.parse(raw); } catch (e) { return; }
-
+/* applyState mutates the DOM to match the given state. Used on boot (load
+   from storage), and later by view switching. */
+function applyState(state) {
+  if (!state) return;
   if (state.toggles) {
     const apply = (boxId, attr, val) => {
       if (val == null) return;
@@ -733,6 +738,33 @@ function loadState() {
   }
 }
 
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(captureState())); }
+  catch (e) {}
+}
+
+function loadState() {
+  // First boot: lock the HTML baseline as the saved default so (reset) has
+  // a target even before the user ever clicks (save as default).
+  let defaultRaw;
+  try { defaultRaw = localStorage.getItem(DEFAULT_KEY); } catch (e) {}
+  if (!defaultRaw) {
+    try { localStorage.setItem(DEFAULT_KEY, JSON.stringify(captureState())); }
+    catch (e) {}
+  }
+
+  // Apply working state if present, otherwise fall through to the default.
+  let raw;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) { return; }
+  if (!raw) {
+    try { raw = localStorage.getItem(DEFAULT_KEY); } catch (e) { return; }
+  }
+  if (!raw) return;
+  let state;
+  try { state = JSON.parse(raw); } catch (e) { return; }
+  applyState(state);
+}
+
 ['toggle-grid', 'toggle-snap', 'toggle-dims', 'toggle-padding'].forEach(id => {
   document.getElementById(id).addEventListener('change', saveState);
 });
@@ -742,12 +774,45 @@ document.querySelectorAll('input[name="padding-preset"]').forEach(r => {
 });
 document.addEventListener('mouseup', saveState);
 
+/* Flash a values-panel link's text for `duration` ms, then restore.
+   Used for the (save as default) inline confirmation: "saved" or
+   "already default". The link is non-interactive while flashing. */
+function flashLinkText(linkId, msg, duration) {
+  const link = document.getElementById(linkId);
+  if (!link) return;
+  if (!link.dataset.originalText) link.dataset.originalText = link.textContent;
+  link.textContent = msg;
+  link.classList.add('is-flashing');
+  clearTimeout(link._flashTimer);
+  link._flashTimer = setTimeout(() => {
+    link.textContent = link.dataset.originalText;
+    link.classList.remove('is-flashing');
+  }, duration);
+}
+
 document.getElementById('reset-link').addEventListener('click', (e) => {
   e.preventDefault();
-  if (confirm('Reset all positions, sizes, and toggle states to defaults?')) {
+  if (confirm('Reset to saved default?')) {
     try { localStorage.removeItem(STORAGE_KEY); } catch (e2) {}
     location.reload();
   }
+});
+
+/* (save as default): captures the current canvas state into DEFAULT_KEY.
+   If the current state already matches the saved default exactly, the link
+   flashes "already default" and no write happens. */
+document.getElementById('save-default-link').addEventListener('click', (e) => {
+  e.preventDefault();
+  const current = JSON.stringify(captureState());
+  let existing = null;
+  try { existing = localStorage.getItem(DEFAULT_KEY); } catch (e2) {}
+  if (existing === current) {
+    flashLinkText('save-default-link', 'already default', 2000);
+    return;
+  }
+  try { localStorage.setItem(DEFAULT_KEY, current); }
+  catch (e2) {}
+  flashLinkText('save-default-link', 'saved', 2000);
 });
 
 /* === LOGO ↔ TITLE VERTICAL ALIGN ===
