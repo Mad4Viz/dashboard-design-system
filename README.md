@@ -10,7 +10,7 @@ I've only spent a couple of hours building this as a side project, as an alterna
 
 ## Demo
 
-![Dashboard Design System demo](https://github.com/user-attachments/assets/27fd1053-b8a5-4b8d-bab2-e6a86979bb55)
+https://github.com/user-attachments/assets/27fd1053-b8a5-4b8d-bab2-e6a86979bb55
 
 ## Reverse-engineered from
 
