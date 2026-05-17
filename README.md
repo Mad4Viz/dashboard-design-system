@@ -10,7 +10,7 @@ I've only spent a couple of hours building this as a side project, as an alterna
 
 ## Demo
 
-<video src="media/claude-design-demo.mp4" controls></video>
+![Dashboard Design System demo](https://github.com/user-attachments/assets/27fd1053-b8a5-4b8d-bab2-e6a86979bb55)
 
 ## Reverse-engineered from
 
@@ -21,12 +21,12 @@ The kit was reverse-engineered from two of my own dashboards built in Tableau.
     <td>
       <img src="reference/screenshots/shopify_overview.png" alt="Shopify Overview"/>
       <br/>
-      <a href="https://public.tableau.com/app/profile/valerie.madojemu/viz/ShopifyOverviewRAWNutritionConcept/ShopifyOverview">View Shopify Overview on Tableau Public</a>
+      <a href="https://public.tableau.com/app/profile/valerie.madojemu/viz/ShopifyOverviewRAWNutritionConcept/ShopifyOverview" target="_blank" rel="noopener noreferrer">View Shopify Overview on Tableau Public</a>
     </td>
     <td>
       <img src="reference/screenshots/marketing_spend_overview.png" alt="Marketing Spend Overview"/>
       <br/>
-      <a href="https://public.tableau.com/app/profile/valerie.madojemu/viz/MarketingSpendOverviewRAWNutritionConcept/MarketingSpendOverview">View Marketing Spend on Tableau Public</a>
+      <a href="https://public.tableau.com/app/profile/valerie.madojemu/viz/MarketingSpendOverviewRAWNutritionConcept/MarketingSpendOverview" target="_blank" rel="noopener noreferrer">View Marketing Spend on Tableau Public</a>
     </td>
   </tr>
 </table>
@@ -48,11 +48,11 @@ I wanted somewhere to mock up a wireframe, experiment, take inspiration from lay
 
 One design system, many projects. The kit is the starting point. Every new dashboard or widget builds from the same HTML, tokens, and components. You don't rebuild the foundation; you extend it.
 
-1. **Watch Nate Herk's Claude Design masterclass.** It walks through the Cowork → Claude Design workflow this kit is built around. [Watch on YouTube](https://www.youtube.com/watch?v=ovabeVoWrA0).
+1. **Watch Nate Herk's Claude Design masterclass.** It walks through the Cowork → Claude Design workflow this kit is built around. <a href="https://www.youtube.com/watch?v=ovabeVoWrA0" target="_blank" rel="noopener noreferrer">Watch on YouTube</a>.
 
 2. **Download the kit.** Clone the repo or grab the zip from GitHub.
 
-3. **Iterate in Claude Cowork (or equivalent).** Open the kit in Cowork, Claude Code, Codex, or another AI tool. Do the thinking there. Use [`prompts/get-started.md`](prompts/get-started.md) as your starting prompt — it walks the LLM through a checkpoint-driven adaptation. If you're basing your dashboard on something specific (a real dashboard, an inspiration image), upload reference pictures and tell it what to match.
+3. **Iterate in Claude Cowork (or equivalent).** Open the kit in Cowork, Claude Code, Codex, or another AI tool. Do the thinking there. Use <a href="prompts/get-started.md" target="_blank" rel="noopener noreferrer"><code>prompts/get-started.md</code></a> as your starting prompt — it walks the LLM through a checkpoint-driven adaptation. If you're basing your dashboard on something specific (a real dashboard, an inspiration image), upload reference pictures and tell it what to match.
 
 4. **Move to Claude Design for the visual finish.** Set up the kit as a Design System inside Claude Design. You can paste the GitHub repo URL or drop the folder directly. From there, create a new project per dashboard or widget. The Design System stays fixed; each project is one instance.
 
@@ -72,7 +72,6 @@ One design system, many projects. The kit is the starting point. Every new dashb
 | `reference/charts/` | Five standalone chart files. |
 | `reference/screenshots/` | The two reference dashboards shown above plus the full kit screenshot. |
 | `assets/` | Logo and icons. |
-| `media/` | The demo video. |
 
 ## What's in v0.1.0
 
@@ -94,7 +93,7 @@ Not yet built:
 
 ## Credits
 
-The technique I used to build this came from Nate Herk's [Claude Design masterclass](https://www.youtube.com/watch?v=ovabeVoWrA0).
+The technique I used to build this came from Nate Herk's <a href="https://www.youtube.com/watch?v=ovabeVoWrA0" target="_blank" rel="noopener noreferrer">Claude Design masterclass</a>.
 
 ## License
 
