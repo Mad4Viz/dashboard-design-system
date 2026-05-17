@@ -52,7 +52,7 @@ One design system, many projects. The kit is the starting point. Every new dashb
 
 2. **Download the kit.** Clone the repo or grab the zip from GitHub.
 
-3. **Iterate in Claude Cowork (or equivalent).** Open the kit in Cowork, Claude Code, Codex, or another AI tool. Do the thinking there. If you're basing your dashboard on something specific (a real dashboard, an inspiration image), upload reference pictures and tell it what to match.
+3. **Iterate in Claude Cowork (or equivalent).** Open the kit in Cowork, Claude Code, Codex, or another AI tool. Do the thinking there. Use [`prompts/get-started.md`](prompts/get-started.md) as your starting prompt — it walks the LLM through a checkpoint-driven adaptation. If you're basing your dashboard on something specific (a real dashboard, an inspiration image), upload reference pictures and tell it what to match.
 
 4. **Move to Claude Design for the visual finish.** Set up the kit as a Design System inside Claude Design. You can paste the GitHub repo URL or drop the folder directly. From there, create a new project per dashboard or widget. The Design System stays fixed; each project is one instance.
 
@@ -68,6 +68,7 @@ One design system, many projects. The kit is the starting point. Every new dashb
 | Path | What's in it |
 |---|---|
 | `template/` | The working dashboard. `index.html` plus CSS and JS. |
+| `prompts/` | Starter prompt for LLMs to tailor the kit to your project. |
 | `reference/charts/` | Five standalone chart files. |
 | `reference/screenshots/` | The two reference dashboards shown above plus the full kit screenshot. |
 | `assets/` | Logo and icons. |
