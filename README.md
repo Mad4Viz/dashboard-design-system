@@ -6,7 +6,7 @@ The goal is to ship a high-fidelity BI dashboard prototype in 30 minutes. For an
 
 ## Status
 
-I've only spent a couple of hours building this as a side project, as an alternative to Figma. Expect rough edges. Pull requests and forks welcome.
+I've only spent a couple of hours building this as a side project, as an alternative to Figma. Expect rough edges.
 
 ## Demo
 
@@ -73,6 +73,14 @@ One design system, many projects. The kit is the starting point. Every new dashb
 | `assets/` | Logo and icons. |
 | `media/` | The demo video. |
 
+## What's in v0.1.0
+
+- **Canvas.** 1440x1024 fixed, with snap-to-grid, edge alignment guides, and live spacing flags at gutter multiples.
+- **Components.** 4 KPI cards plus 4 chart types: grouped bar, multi-line with annotation, combo bar plus line, ranked horizontal bar.
+- **Tweaks Panel.** Grid overlay, snap, dimensions, and component padding (16, 24, or custom) toggles. + Add component.
+- **Named views.** Save, load, rename, duplicate, reset, drag-to-reorder. Edits auto-save into the active view. Stored in localStorage.
+- **Default layout.** Save any layout as the default. New views and per-view reset start from it.
+
 ## Roadmap
 
 Not yet built:
@@ -81,6 +89,7 @@ Not yet built:
 - Alternative grid systems (8-column or 16-column variants of the current 12-column).
 - Alternative dashboard layouts.
 - A way to change colors, fonts, and layout without touching the code.
+- Claude Skills for chart-building and front-end work, so users can tailor the kit to their own stack.
 
 ## Credits
 

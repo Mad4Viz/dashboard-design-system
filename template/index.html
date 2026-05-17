@@ -21,12 +21,13 @@
 <aside class="tweaks-panel">
   <p class="panel-eyebrow">Design System</p>
   <h2>Tweaks Panel</h2>
-  <div class="instructions">
-    Drag any component to test snap. Resize from any corner — the cursor
-    changes when you hit one. Live spacing flags appear at multiples of the
-    grid gutter (24, 48, 72…). Click any title or subtitle to edit. Hover a
-    component to reveal its remove (x) handle. All edits persist across reload.
-  </div>
+  <ul class="instructions">
+    <li><strong>Move and resize.</strong> Click in the center of a component and drag to move. Drag from any corner to resize. Snap to grid and live spacing flags help align.</li>
+    <li><strong>Edit and remove.</strong> Click any title or subtitle to edit. Hover a component to reveal the remove (&times;) in the top-left.</li>
+    <li><strong>Add components.</strong> Use the + Add component button.</li>
+    <li><strong>Canvas helpers.</strong> Toggle grid overlay, snap to grid, dimensions on every component, and component padding (16, 24, or custom).</li>
+    <li><strong>Save views.</strong> Save named views below. Edits auto-save into the loaded view. All work persists across reload.</li>
+  </ul>
 
   <p class="tweak-section-label">Canvas</p>
 
@@ -66,11 +67,23 @@
   <button id="add-component-btn" class="add-btn" type="button">+ Add component</button>
 
   <div class="values-panel">
-    <h3>Live values
-      <a href="#" id="reset-link" class="values-panel-link">(reset)</a>
-      <a href="#" id="save-default-link" class="values-panel-link">(save as default)</a>
-    </h3>
+    <h3>Live values</h3>
     <pre id="values-output"></pre>
+  </div>
+
+  <div class="views-panel">
+    <h3>Views
+      <a href="#" id="save-default-link" class="values-panel-link"
+         data-tooltip="Save the current canvas as the default layout.">(save current as default)</a>
+    </h3>
+    <button id="view-new-from-default-btn" type="button" class="view-new-btn">+ New from default</button>
+    <div class="views-save-row">
+      <input id="view-name-input" type="text" class="views-input" placeholder="View name"
+             aria-describedby="view-name-error" maxlength="60">
+      <button id="view-save-btn" type="button" class="views-save-btn">Save</button>
+    </div>
+    <div id="view-name-error" class="views-error" role="status" aria-live="polite"></div>
+    <div id="views-list" class="views-list" aria-label="Saved views"></div>
   </div>
 </aside>
 
@@ -78,6 +91,9 @@
      CANVAS — 1440 x 1024, hard locked
      ===================================================================== -->
 <div class="canvas-wrapper">
+  <div class="view-status-bar">
+    <span class="view-status-bar-name is-empty" id="view-status-bar-name">Default layout</span>
+  </div>
   <div class="canvas" id="canvas"
        data-grid-visible="false"
        data-snap-enabled="true"

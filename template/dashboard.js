@@ -739,8 +739,20 @@ function applyState(state) {
 }
 
 function saveState() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(captureState())); }
-  catch (e) {}
+  const state = captureState();
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    // Auto-save edits into the active view's stored snapshot too.
+    // To fork without affecting the source, use the duplicate icon first.
+    const active = (typeof getActiveView === 'function') ? getActiveView() : null;
+    if (active) {
+      const views = getViews();
+      if (views[active]) {
+        views[active] = state;
+        setViews(views);
+      }
+    }
+  } catch (e) {}
 }
 
 function loadState() {
@@ -790,14 +802,6 @@ function flashLinkText(linkId, msg, duration) {
   }, duration);
 }
 
-document.getElementById('reset-link').addEventListener('click', (e) => {
-  e.preventDefault();
-  if (confirm('Reset to saved default?')) {
-    try { localStorage.removeItem(STORAGE_KEY); } catch (e2) {}
-    location.reload();
-  }
-});
-
 /* (save as default): captures the current canvas state into DEFAULT_KEY.
    If the current state already matches the saved default exactly, the link
    flashes "already default" and no write happens. */
@@ -814,6 +818,431 @@ document.getElementById('save-default-link').addEventListener('click', (e) => {
   catch (e2) {}
   flashLinkText('save-default-link', 'saved', 2000);
 });
+
+/* =====================================================================
+   5.9 NAMED VIEWS — save/load/rename/delete, always-visible flat list
+   Auto-save is ON: when a view is loaded (active), every saveState writes
+   the canvas state back into that view's stored snapshot. To make a
+   variation without touching the original, click the duplicate icon
+   first; the new copy is what auto-save targets from then on.
+   ===================================================================== */
+const VIEWS_KEY = 'raw_dashboard.views.v1';
+const ACTIVE_VIEW_KEY = 'raw_dashboard.activeView.v1';
+const PENDING_ACTION_KEY = 'raw_dashboard.pendingAction.v1';
+
+function getViews() {
+  try {
+    const raw = localStorage.getItem(VIEWS_KEY);
+    return raw ? JSON.parse(raw) : {};
+  } catch (e) { return {}; }
+}
+function setViews(obj) {
+  try { localStorage.setItem(VIEWS_KEY, JSON.stringify(obj)); } catch (e) {}
+}
+function getActiveView() {
+  try { return localStorage.getItem(ACTIVE_VIEW_KEY); } catch (e) { return null; }
+}
+function setActiveView(name) {
+  try {
+    if (name == null) localStorage.removeItem(ACTIVE_VIEW_KEY);
+    else localStorage.setItem(ACTIVE_VIEW_KEY, name);
+  } catch (e) {}
+}
+
+const viewsEls = {};
+
+function initViewsUI() {
+  viewsEls.input    = document.getElementById('view-name-input');
+  viewsEls.saveBtn  = document.getElementById('view-save-btn');
+  viewsEls.error    = document.getElementById('view-name-error');
+  viewsEls.list     = document.getElementById('views-list');
+  viewsEls.newBtn   = document.getElementById('view-new-from-default-btn');
+  viewsEls.statusName = document.getElementById('view-status-bar-name');
+
+  viewsEls.saveBtn.addEventListener('click', onSaveView);
+  viewsEls.input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') { e.preventDefault(); onSaveView(); }
+  });
+  viewsEls.input.addEventListener('input', clearViewsError);
+  viewsEls.list.addEventListener('click', onListClick);
+  viewsEls.newBtn.addEventListener('click', newViewFromDefault);
+  // Drag-to-reorder: events delegated on the list container.
+  viewsEls.list.addEventListener('dragstart', onRowDragStart);
+  viewsEls.list.addEventListener('dragover',  onRowDragOver);
+  viewsEls.list.addEventListener('drop',      onRowDrop);
+  viewsEls.list.addEventListener('dragend',   onRowDragEnd);
+
+  renderViewsUI();
+  updateViewStatusBar();
+  consumePendingAction();
+}
+
+function renderViewsUI() {
+  if (!viewsEls.list) return;
+  const views = getViews();
+  const names = Object.keys(views);
+  let active = getActiveView();
+  // Self-heal if the stored active view was deleted out from under us.
+  if (active && !views[active]) { setActiveView(null); active = null; }
+
+  viewsEls.list.innerHTML = '';
+  if (names.length === 0) {
+    const empty = document.createElement('div');
+    empty.className = 'views-empty';
+    empty.textContent = 'No saved views';
+    viewsEls.list.appendChild(empty);
+    return;
+  }
+
+  names.forEach(name => {
+    const row = document.createElement('div');
+    row.className = 'view-row';
+    row.dataset.viewName = name;
+    row.draggable = true;
+
+    const isActive = (name === active);
+
+    const dragHandle = document.createElement('span');
+    dragHandle.className = 'view-row-drag';
+    dragHandle.setAttribute('aria-hidden', 'true');
+    dragHandle.setAttribute('data-tooltip', 'Drag to reorder');
+    dragHandle.innerHTML = '&#8942;&#8942;';   // ⋮⋮ two vertical ellipses
+
+    const nameBtn = document.createElement('button');
+    nameBtn.type = 'button';
+    nameBtn.className = 'view-row-name' + (isActive ? ' is-active' : '');
+    nameBtn.dataset.action = 'load';
+    nameBtn.textContent = name;
+
+    const duplicateBtn = document.createElement('button');
+    duplicateBtn.type = 'button';
+    duplicateBtn.className = 'view-row-duplicate';
+    duplicateBtn.dataset.action = 'duplicate';
+    duplicateBtn.setAttribute('aria-label', 'Duplicate ' + name);
+    duplicateBtn.setAttribute('data-tooltip', 'Duplicate this view');
+    duplicateBtn.innerHTML = '&#10697;';   // ⧉ two joined squares
+
+    const renameBtn = document.createElement('button');
+    renameBtn.type = 'button';
+    renameBtn.className = 'view-row-rename';
+    renameBtn.dataset.action = 'rename';
+    renameBtn.setAttribute('aria-label', 'Rename ' + name);
+    renameBtn.setAttribute('data-tooltip', 'Rename');
+    renameBtn.innerHTML = '&#9998;';       // ✎ pencil
+
+    const resetBtn = document.createElement('button');
+    resetBtn.type = 'button';
+    resetBtn.className = 'view-row-reset';
+    resetBtn.dataset.action = 'reset';
+    resetBtn.setAttribute('aria-label', 'Reset ' + name + ' to default');
+    resetBtn.setAttribute('data-tooltip', 'Reset this view to the default layout');
+    resetBtn.innerHTML = '&#10226;';       // ⟲ anticlockwise gapped circle arrow
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'view-row-delete';
+    deleteBtn.dataset.action = 'delete';
+    deleteBtn.setAttribute('aria-label', 'Delete ' + name);
+    deleteBtn.setAttribute('data-tooltip', 'Delete');
+    deleteBtn.innerHTML = '&times;';       // × multiplication sign
+
+    row.appendChild(dragHandle);
+    row.appendChild(nameBtn);
+    row.appendChild(duplicateBtn);
+    row.appendChild(renameBtn);
+    row.appendChild(resetBtn);
+    row.appendChild(deleteBtn);
+    viewsEls.list.appendChild(row);
+  });
+
+  updateViewStatusBar();
+}
+
+/* Helper: find a row by its view name without trusting it to be safe in a
+   CSS selector. */
+function findRowByName(name) {
+  const rows = viewsEls.list ? viewsEls.list.querySelectorAll('.view-row') : [];
+  for (const r of rows) if (r.dataset.viewName === name) return r;
+  return null;
+}
+
+/* Status bar above the canvas: shows which view the user is currently on.
+   Google Docs / Notion pattern — always visible to satisfy NN/g
+   Visibility of System Status (heuristic #1). */
+function updateViewStatusBar() {
+  if (!viewsEls.statusName) return;
+  const active = getActiveView();
+  const views = getViews();
+  if (!active || !views[active]) {
+    viewsEls.statusName.textContent = 'Default layout';
+    viewsEls.statusName.classList.add('is-empty');
+    return;
+  }
+  viewsEls.statusName.textContent = active;
+  viewsEls.statusName.classList.remove('is-empty');
+}
+
+/* Duplicate the *stored* state of a view into a new one. The new copy is
+   loaded into the canvas; a pending action focuses the new row's rename
+   input after the reload so the user can immediately name it. */
+function duplicateView(name) {
+  const views = getViews();
+  if (!views[name]) return;
+  const copyName = generateCopyName(name, views);
+  views[copyName] = JSON.parse(JSON.stringify(views[name]));
+  setViews(views);
+  setActiveView(copyName);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(views[copyName]));
+    localStorage.setItem(PENDING_ACTION_KEY, JSON.stringify({ type: 'rename', name: copyName }));
+  } catch (e) {}
+  location.reload();
+}
+
+function generateCopyName(base, views) {
+  let candidate = base + ' (copy)';
+  let i = 2;
+  while (views[candidate]) { candidate = base + ' (copy ' + i + ')'; i++; }
+  return candidate;
+}
+
+/* + New from default: load the saved default state into the canvas, clear
+   the active view pointer, and focus the name input after reload so the
+   user can name and save their fresh start. */
+function newViewFromDefault() {
+  let def;
+  try { def = localStorage.getItem(DEFAULT_KEY); } catch (e) {}
+  if (!def) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, def);
+    localStorage.removeItem(ACTIVE_VIEW_KEY);
+    localStorage.setItem(PENDING_ACTION_KEY, JSON.stringify({ type: 'focusInput' }));
+  } catch (e) {}
+  location.reload();
+}
+
+/* Drag-to-reorder. HTML5 native drag events delegated on the list. The
+   drag is initiated from anywhere in the row body except action buttons
+   (preventDefault on dragstart from a button stops the drag cleanly).
+   Drop position is computed against the target row's vertical midpoint. */
+let dragSrcName = null;
+
+function onRowDragStart(e) {
+  // Don't initiate drag if the user grabbed an action button.
+  if (e.target.closest('button[data-action]')) { e.preventDefault(); return; }
+  const row = e.target.closest('.view-row');
+  if (!row) return;
+  dragSrcName = row.dataset.viewName;
+  row.classList.add('is-dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  // Firefox refuses to fire drop unless setData is called.
+  try { e.dataTransfer.setData('text/plain', dragSrcName); } catch (err) {}
+}
+
+function onRowDragOver(e) {
+  if (!dragSrcName) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  const row = e.target.closest('.view-row');
+  if (!row || row.dataset.viewName === dragSrcName) return;
+  const rect = row.getBoundingClientRect();
+  const insertBefore = e.clientY < (rect.top + rect.height / 2);
+  // Clear any previous indicators, set new one.
+  viewsEls.list.querySelectorAll('.view-row').forEach(r => {
+    r.classList.remove('drop-before', 'drop-after');
+  });
+  row.classList.add(insertBefore ? 'drop-before' : 'drop-after');
+}
+
+function onRowDrop(e) {
+  e.preventDefault();
+  if (!dragSrcName) { cleanupDrag(); return; }
+  const row = e.target.closest('.view-row');
+  if (!row || row.dataset.viewName === dragSrcName) { cleanupDrag(); return; }
+  const rect = row.getBoundingClientRect();
+  const insertBefore = e.clientY < (rect.top + rect.height / 2);
+  reorderViews(dragSrcName, row.dataset.viewName, insertBefore);
+  cleanupDrag();
+}
+
+function onRowDragEnd() { cleanupDrag(); }
+
+function cleanupDrag() {
+  if (!viewsEls.list) return;
+  viewsEls.list.querySelectorAll('.view-row').forEach(r => {
+    r.classList.remove('is-dragging', 'drop-before', 'drop-after');
+  });
+  dragSrcName = null;
+}
+
+/* Rebuild the views object with the source view re-inserted relative to
+   the target. Object key order is preserved by the spread, so the visible
+   list order matches the storage order. */
+function reorderViews(sourceName, targetName, insertBefore) {
+  const views = getViews();
+  const names = Object.keys(views);
+  const fromIndex = names.indexOf(sourceName);
+  if (fromIndex === -1) return;
+  names.splice(fromIndex, 1);
+  let toIndex = names.indexOf(targetName);
+  if (toIndex === -1) return;
+  names.splice(insertBefore ? toIndex : toIndex + 1, 0, sourceName);
+  const reordered = {};
+  names.forEach(n => { reordered[n] = views[n]; });
+  setViews(reordered);
+  renderViewsUI();
+}
+
+/* Drain a one-shot post-reload action set before location.reload. Called
+   once at the end of initViewsUI and always self-clears. */
+function consumePendingAction() {
+  let raw;
+  try { raw = localStorage.getItem(PENDING_ACTION_KEY); } catch (e) { return; }
+  if (!raw) return;
+  try { localStorage.removeItem(PENDING_ACTION_KEY); } catch (e) {}
+  let action;
+  try { action = JSON.parse(raw); } catch (e) { return; }
+  if (!action || !action.type) return;
+  if (action.type === 'focusInput' && viewsEls.input) {
+    viewsEls.input.focus();
+    return;
+  }
+  if (action.type === 'rename' && action.name) {
+    const row = findRowByName(action.name);
+    if (row) startRename(row, action.name);
+  }
+}
+
+function onSaveView() {
+  const name = (viewsEls.input.value || '').trim();
+  if (!name) {
+    showViewsError('Enter a name for this view.');
+    viewsEls.input.focus();
+    return;
+  }
+  const views = getViews();
+  if (views[name]) {
+    if (!confirm('View "' + name + '" already exists. Overwrite?')) return;
+  }
+  views[name] = captureState();
+  setViews(views);
+  setActiveView(name);
+  viewsEls.input.value = '';
+  clearViewsError();
+  renderViewsUI();
+  viewsEls.input.focus();
+}
+
+function showViewsError(msg) {
+  viewsEls.error.textContent = msg;
+  viewsEls.input.setAttribute('aria-invalid', 'true');
+  clearTimeout(viewsEls._errorTimer);
+  viewsEls._errorTimer = setTimeout(clearViewsError, 3000);
+}
+function clearViewsError() {
+  viewsEls.error.textContent = '';
+  viewsEls.input.removeAttribute('aria-invalid');
+}
+
+function onListClick(e) {
+  const btn = e.target.closest('button[data-action]');
+  if (!btn) return;
+  const row = btn.closest('.view-row');
+  if (!row) return;
+  const name = row.dataset.viewName;
+  const action = btn.dataset.action;
+  if (action === 'load')      loadView(name);
+  if (action === 'duplicate') duplicateView(name);
+  if (action === 'rename')    startRename(row, name);
+  if (action === 'reset')     resetViewToDefault(name);
+  if (action === 'delete')    deleteView(name);
+}
+
+function loadView(name) {
+  const views = getViews();
+  if (!views[name]) return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(views[name]));
+    setActiveView(name);
+    location.reload();
+  } catch (e) {}
+}
+
+function deleteView(name) {
+  if (!confirm('Delete view "' + name + '"?')) return;
+  const views = getViews();
+  delete views[name];
+  setViews(views);
+  if (getActiveView() === name) setActiveView(null);
+  renderViewsUI();
+}
+
+/* Overwrite a view's stored snapshot with the saved default layout. If
+   the view is currently active, also reload so the canvas reflects the
+   change immediately. */
+function resetViewToDefault(name) {
+  if (!confirm('Reset "' + name + '" to the default layout? This overwrites the view.')) return;
+  let defaultRaw;
+  try { defaultRaw = localStorage.getItem(DEFAULT_KEY); } catch (e) {}
+  if (!defaultRaw) return;
+  let defaultState;
+  try { defaultState = JSON.parse(defaultRaw); } catch (e) { return; }
+  const views = getViews();
+  if (!views[name]) return;
+  views[name] = defaultState;
+  setViews(views);
+  if (getActiveView() === name) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(defaultState)); } catch (e) {}
+    location.reload();
+    return;
+  }
+  renderViewsUI();
+}
+
+function startRename(row, name) {
+  const nameBtn = row.querySelector('.view-row-name');
+  if (!nameBtn) return;
+
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'view-row-name-input';
+  input.value = name;
+  input.maxLength = 60;
+  input.setAttribute('aria-label', 'Rename ' + name);
+  nameBtn.replaceWith(input);
+  input.focus();
+  input.select();
+
+  let settled = false;
+  function commit() {
+    if (settled) return;
+    const newName = (input.value || '').trim();
+    if (!newName || newName === name) { settled = true; renderViewsUI(); return; }
+    const views = getViews();
+    if (views[newName]) {
+      showViewsError('A view named "' + newName + '" already exists.');
+      input.focus();
+      input.select();
+      return;
+    }
+    settled = true;
+    views[newName] = views[name];
+    delete views[name];
+    setViews(views);
+    if (getActiveView() === name) setActiveView(newName);
+    renderViewsUI();
+  }
+  function cancel() {
+    if (settled) return;
+    settled = true;
+    renderViewsUI();
+  }
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter')  { e.preventDefault(); commit(); }
+    if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+  });
+  input.addEventListener('blur', commit);
+}
 
 /* === LOGO ↔ TITLE VERTICAL ALIGN ===
    Always-on. Measures the h1's visual center and shifts the sidebar logo so
@@ -1012,5 +1441,6 @@ function bootDashboard() {
   loadState();
   applyLogoAlignment();
   updateValuesPanel();
+  initViewsUI();
 }
 window.addEventListener('DOMContentLoaded', bootDashboard);
