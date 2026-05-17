@@ -10,7 +10,7 @@ I've only spent a couple of hours building this as a side project, as an alterna
 
 ## Demo
 
-https://github.com/user-attachments/assets/27fd1053-b8a5-4b8d-bab2-e6a86979bb55
+https://github.com/user-attachments/assets/0e5f7987-839b-4753-a4a5-9aaafeab1259
 
 ## Reverse-engineered from
 
